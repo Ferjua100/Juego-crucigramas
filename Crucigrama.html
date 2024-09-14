@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Juego de Crucigramas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Código CSS integrado -->
+    <style>
+        /* Estilos Generales */
+        body {
+            background-color: #f0f8ff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+            background-color: #fff;
+            padding: 30px 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2em;
+            margin: 0;
+        }
+
+        h2 {
+            color: #555;
+            font-size: 1.5em;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+            .container {
+                margin: 20px auto;
+                padding: 20px 15px;
+            }
+        }
+
+        /* Selección de Dificultad */
+        .difficulty-btn {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .difficulty-btn:hover {
+            background-color: #0056b3;
+        }
+
+        @media (max-width: 600px) {
+            .difficulty-btn {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+
+        /* Contenedor del Juego */
+        #definition {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #answer {
+            padding: 10px;
+            width: 60%;
+            max-width: 300px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        #submit {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        #submit:hover {
+            background-color: #218838;
+        }
+
+        @media (max-width: 600px) {
+            #answer {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            #submit {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
+
+        #message {
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #d9534f;
+        }
+
+        #attempts, #score {
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+
+        /* Mensaje de Victoria */
+        #win-message h1 {
+            font-size: 3em;
+            color: #28a745;
+        }
+
+        #restart {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #17a2b8;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #restart:hover {
+            background-color: #117a8b;
+        }
+
+        @media (max-width: 600px) {
+            #win-message h1 {
+                font-size: 2em;
+            }
+            #restart {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Selección de Dificultad -->
+    <div class="container" id="difficulty-selection">
+        <h1>Juego de Crucigramas</h1>
+        <h2>Selecciona la dificultad</h2>
+        <button class="difficulty-btn" data-level="facil">Fácil</button>
+        <button class="difficulty-btn" data-level="normal">Normal</button>
+        <button class="difficulty-btn" data-level="experto">Experto</button>
+    </div>
+
+    <!-- Contenedor del Juego -->
+    <div class="container" id="game-container" style="display: none;">
+        <h1>Juego de Crucigramas</h1>
+        <div id="score">Puntuación: 0</div>
+        <div id="definition"></div>
+        <div class="input-group">
+            <input type="text" id="answer" placeholder="Escribe tu respuesta aquí">
+            <button id="submit">Enviar</button>
+        </div>
+        <div id="attempts">Intentos restantes: 3</div>
+        <div id="message"></div>
+    </div>
+
+    <!-- Mensaje de Victoria -->
+    <div class="container" id="win-message" style="display: none;">
+        <h1>¡HAS GANADO!</h1>
+        <button id="restart">Jugar de Nuevo</button>
+    </div>
+
+    <!-- Código JavaScript integrado -->
+    <script>
+        let score = 0;
+        let attempts = 3;
+        let currentWord = '';
+        let currentDefinition = '';
+        let difficulty = '';
+        let filteredWords = [];
+
+        const words = [
+            // Palabras de Dificultad Fácil
+            { word: 'perro', definition: 'Animal doméstico conocido como el mejor amigo del hombre.', difficulty: 'facil' },
+            { word: 'gato', definition: 'Animal doméstico que le gusta dormir y cazar ratones.', difficulty: 'facil' },
+            { word: 'sol', definition: 'Estrella luminosa que es el centro de nuestro sistema solar.', difficulty: 'facil' },
+            { word: 'casa', definition: 'Lugar donde habita una familia.', difficulty: 'facil' },
+            { word: 'libro', definition: 'Conjunto de hojas encuadernadas que contienen texto o imágenes.', difficulty: 'facil' },
+            // Palabras de Dificultad Normal
+            { word: 'computadora', definition: 'Dispositivo electrónico usado para procesar datos.', difficulty: 'normal' },
+            { word: 'bicicleta', definition: 'Vehículo de dos ruedas impulsado por pedales.', difficulty: 'normal' },
+            { word: 'astronomía', definition: 'Ciencia que estudia los cuerpos celestes.', difficulty: 'normal' },
+            { word: 'montaña', definition: 'Gran elevación natural del terreno.', difficulty: 'normal' },
+            { word: 'electricidad', definition: 'Forma de energía resultante de la existencia de una diferencia de potencial.', difficulty: 'normal' },
+            // Palabras de Dificultad Experto
+            { word: 'criptografía', definition: 'Ciencia de escribir con clave secreta o de un modo enigmático.', difficulty: 'experto' },
+            { word: 'paralelepípedo', definition: 'Sólido de seis caras paralelas e iguales dos a dos.', difficulty: 'experto' },
+            { word: 'electroencefalograma', definition: 'Registro gráfico de la actividad eléctrica del cerebro.', difficulty: 'experto' },
+            { word: 'esternocleidomastoideo', definition: 'Músculo del cuello que permite la rotación y flexión de la cabeza.', difficulty: 'experto' },
+            { word: 'otorrinolaringología', definition: 'Especialidad médica que se encarga de las enfermedades del oído, nariz y garganta.', difficulty: 'experto' },
+            // Puedes agregar más palabras y definiciones aquí clasificadas por dificultad
+        ];
+
+        // Elementos del DOM
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        const gameContainer = document.getElementById('game-container');
+        const difficultySelection = document.getElementById('difficulty-selection');
+        const winMessage = document.getElementById('win-message');
+        const restartButton = document.getElementById('restart');
+
+        // Funciones
+        function getRandomWord() {
+            const randomIndex = Math.floor(Math.random() * filteredWords.length);
+            return filteredWords[randomIndex];
+        }
+
+        function setNewWord() {
+            if (filteredWords.length === 0) {
+                document.getElementById('message').innerText = 'No hay más palabras en esta dificultad.';
+                return;
+            }
+            const wordObj = getRandomWord();
+            currentWord = wordObj.word.toLowerCase();
+            currentDefinition = wordObj.definition;
+            document.getElementById('definition').innerText = currentDefinition;
+            document.getElementById('answer').value = '';
+            document.getElementById('message').innerText = '';
+            attempts = 3;
+            document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
+        }
+
+        function startGame(selectedDifficulty) {
+            difficulty = selectedDifficulty;
+            filteredWords = words.filter(word => word.difficulty === difficulty);
+            score = 0;
+            document.getElementById('score').innerText = 'Puntuación: ' + score;
+            difficultySelection.style.display = 'none';
+            winMessage.style.display = 'none';
+            gameContainer.style.display = 'block';
+            setNewWord();
+        }
+
+        function checkWin() {
+            if (score >= 15) {
+                gameContainer.style.display = 'none';
+                winMessage.style.display = 'block';
+            }
+        }
+
+        // Eventos
+        function handleDifficultySelection(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            startGame(this.getAttribute('data-level'));
+        }
+
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', handleDifficultySelection, false);
+            button.addEventListener('touchend', handleDifficultySelection, false);
+        });
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const userAnswer = document.getElementById('answer').value.toLowerCase().trim();
+            if (userAnswer === '') {
+                document.getElementById('message').innerText = 'Por favor, ingresa una respuesta.';
+                return;
+            }
+            if (userAnswer === currentWord) {
+                score++;
+                document.getElementById('score').innerText = 'Puntuación: ' + score;
+                document.getElementById('message').innerText = '¡Correcto!';
+                checkWin();
+                if (score < 15) {
+                    setTimeout(setNewWord, 2000);
+                }
+            } else {
+                attempts--;
+                if (attempts > 0) {
+                    document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
+                    document.getElementById('message').innerText = 'Incorrecto. Inténtalo de nuevo.';
+                } else {
+                    score = Math.max(0, score - 1);
+                    document.getElementById('score').innerText = 'Puntuación: ' + score;
+                    if (score === 0) {
+                        document.getElementById('message').innerText = 'Has perdido la partida. Comenzando de nuevo...';
+                        setTimeout(function() {
+                            score = 0;
+                            document.getElementById('score').innerText = 'Puntuación: ' + score;
+                            setNewWord();
+                        }, 2000);
+                    } else {
+                        document.getElementById('message').innerText = 'Incorrecto. Pasando a la siguiente palabra.';
+                        setTimeout(setNewWord, 2000);
+                    }
+                }
+            }
+        }
+
+        document.getElementById('submit').addEventListener('click', handleSubmit, false);
+        document.getElementById('submit').addEventListener('touchend', handleSubmit, false);
+
+        function handleRestart(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            difficultySelection.style.display = 'block';
+            winMessage.style.display = 'none';
+            gameContainer.style.display = 'none';
+        }
+
+        restartButton.addEventListener('click', handleRestart, false);
+        restartButton.addEventListener('touchend', handleRestart, false);
+
+        // Iniciar el juego mostrando la selección de dificultad
+        window.onload = function() {
+            difficultySelection.style.display = 'block';
+            gameContainer.style.display = 'none';
+            winMessage.style.display = 'none';
+        };
+    </script>
+</body>
+</html>
