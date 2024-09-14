@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Juego de Crucigramas</title>
+    <title>Juego de Crucigramas con Avatares</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Código CSS integrado -->
     <style>
@@ -16,36 +16,18 @@
         .container {
             width: 90%;
             max-width: 600px;
-            margin: 50px auto;
+            margin: 20px auto;
             text-align: center;
             background-color: #fff;
-            padding: 30px 20px;
+            padding: 20px 15px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
-        h1 {
+        h1, h2, h3 {
             color: #333;
-            font-size: 2em;
-            margin: 0;
-        }
-
-        h2 {
-            color: #555;
-            font-size: 1.5em;
-        }
-
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 1.8em;
-            }
-            h2 {
-                font-size: 1.3em;
-            }
-            .container {
-                margin: 20px auto;
-                padding: 20px 15px;
-            }
+            margin: 10px 0;
         }
 
         /* Selección de Dificultad */
@@ -62,13 +44,6 @@
 
         .difficulty-btn:hover {
             background-color: #0056b3;
-        }
-
-        @media (max-width: 600px) {
-            .difficulty-btn {
-                width: 100%;
-                margin: 10px 0;
-            }
         }
 
         /* Contenedor del Juego */
@@ -106,17 +81,6 @@
             background-color: #218838;
         }
 
-        @media (max-width: 600px) {
-            #answer {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            #submit {
-                width: 100%;
-                margin-left: 0;
-            }
-        }
-
         #message {
             margin-top: 20px;
             font-size: 1.1em;
@@ -130,7 +94,7 @@
 
         /* Mensaje de Victoria */
         #win-message h1 {
-            font-size: 3em;
+            font-size: 2.5em;
             color: #28a745;
         }
 
@@ -148,11 +112,65 @@
             background-color: #117a8b;
         }
 
+        /* Tienda de Avatares */
+        .avatar-store {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .avatar-item {
+            margin: 10px;
+            text-align: center;
+        }
+
+        .avatar-item img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+        }
+
+        .avatar-item button {
+            margin-top: 5px;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            cursor: pointer;
+            background-color: #ffc107;
+            color: #212529;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .avatar-item button:hover {
+            background-color: #e0a800;
+        }
+
+        /* Selección de Avatar */
+        #current-avatar-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #current-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: block;
+            margin: 10px auto;
+        }
+
         @media (max-width: 600px) {
-            #win-message h1 {
-                font-size: 2em;
+            .difficulty-btn {
+                width: 100%;
+                margin: 10px 0;
             }
-            #restart {
+
+            #submit {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            #answer {
                 width: 100%;
             }
         }
@@ -165,13 +183,19 @@
         <h2>Selecciona la dificultad</h2>
         <button class="difficulty-btn" data-level="facil">Fácil</button>
         <button class="difficulty-btn" data-level="normal">Normal</button>
-        <button class="difficulty-btn" data-level="experto">Experto</button>
+        <button class="difficulty-btn" data-level="experto">Difícil</button>
+        <div id="current-avatar-container">
+            <h3>Puntos acumulados: <span id="total-score">0</span></h3>
+            <h3>Avatar Actual:</h3>
+            <img id="current-avatar" src="" alt="Avatar Actual">
+            <button id="change-avatar">Cambiar Avatar</button>
+        </div>
     </div>
 
     <!-- Contenedor del Juego -->
     <div class="container" id="game-container" style="display: none;">
         <h1>Juego de Crucigramas</h1>
-        <div id="score">Puntuación: 0</div>
+        <div id="score">Puntuación de la Partida: 0</div>
         <div id="definition"></div>
         <div class="input-group">
             <input type="text" id="answer" placeholder="Escribe tu respuesta aquí">
@@ -187,14 +211,34 @@
         <button id="restart">Jugar de Nuevo</button>
     </div>
 
+    <!-- Tienda de Avatares -->
+    <div class="container" id="avatar-store" style="display: none;">
+        <h1>Tienda de Avatares</h1>
+        <h3>Tus Puntos: <span id="store-total-score">0</span></h3>
+        <div class="avatar-store">
+            <!-- Los avatares se generarán dinámicamente -->
+        </div>
+        <button id="back-to-menu">Volver al Menú</button>
+    </div>
+
     <!-- Código JavaScript integrado -->
     <script>
-        let score = 0;
+        let totalScore = 0;
+        let gameScore = 0;
         let attempts = 3;
         let currentWord = '';
         let currentDefinition = '';
         let difficulty = '';
         let filteredWords = [];
+        let currentAvatar = '';
+        let avatars = [
+            { id: 1, src: 'https://i.pravatar.cc/100?img=1', price: 10, unlocked: false },
+            { id: 2, src: 'https://i.pravatar.cc/100?img=2', price: 20, unlocked: false },
+            { id: 3, src: 'https://i.pravatar.cc/100?img=3', price: 30, unlocked: false },
+            { id: 4, src: 'https://i.pravatar.cc/100?img=4', price: 40, unlocked: false },
+            { id: 5, src: 'https://i.pravatar.cc/100?img=5', price: 50, unlocked: false },
+            // Puedes agregar más avatares si lo deseas
+        ];
 
         const words = [
             // Palabras de Dificultad Fácil
@@ -209,7 +253,7 @@
             { word: 'astronomía', definition: 'Ciencia que estudia los cuerpos celestes.', difficulty: 'normal' },
             { word: 'montaña', definition: 'Gran elevación natural del terreno.', difficulty: 'normal' },
             { word: 'electricidad', definition: 'Forma de energía resultante de la existencia de una diferencia de potencial.', difficulty: 'normal' },
-            // Palabras de Dificultad Experto
+            // Palabras de Dificultad Difícil
             { word: 'criptografía', definition: 'Ciencia de escribir con clave secreta o de un modo enigmático.', difficulty: 'experto' },
             { word: 'paralelepípedo', definition: 'Sólido de seis caras paralelas e iguales dos a dos.', difficulty: 'experto' },
             { word: 'electroencefalograma', definition: 'Registro gráfico de la actividad eléctrica del cerebro.', difficulty: 'experto' },
@@ -224,6 +268,13 @@
         const difficultySelection = document.getElementById('difficulty-selection');
         const winMessage = document.getElementById('win-message');
         const restartButton = document.getElementById('restart');
+        const totalScoreSpan = document.getElementById('total-score');
+        const storeTotalScoreSpan = document.getElementById('store-total-score');
+        const currentAvatarImg = document.getElementById('current-avatar');
+        const changeAvatarButton = document.getElementById('change-avatar');
+        const avatarStore = document.getElementById('avatar-store');
+        const avatarStoreContainer = document.querySelector('.avatar-store');
+        const backToMenuButton = document.getElementById('back-to-menu');
 
         // Funciones
         function getRandomWord() {
@@ -249,19 +300,95 @@
         function startGame(selectedDifficulty) {
             difficulty = selectedDifficulty;
             filteredWords = words.filter(word => word.difficulty === difficulty);
-            score = 0;
-            document.getElementById('score').innerText = 'Puntuación: ' + score;
+            gameScore = 0;
+            document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
             difficultySelection.style.display = 'none';
             winMessage.style.display = 'none';
+            avatarStore.style.display = 'none';
             gameContainer.style.display = 'block';
             setNewWord();
         }
 
         function checkWin() {
-            if (score >= 15) {
+            let winScore = 0;
+            switch(difficulty) {
+                case 'facil':
+                    winScore = 15;
+                    break;
+                case 'normal':
+                    winScore = 30;
+                    break;
+                case 'experto':
+                    winScore = 45;
+                    break;
+            }
+            if (gameScore >= winScore) {
+                totalScore += gameScore;
+                updateTotalScore();
                 gameContainer.style.display = 'none';
                 winMessage.style.display = 'block';
             }
+        }
+
+        function updateTotalScore() {
+            totalScoreSpan.innerText = totalScore;
+            storeTotalScoreSpan.innerText = totalScore;
+        }
+
+        function updateAvatar() {
+            if (currentAvatar) {
+                currentAvatarImg.src = currentAvatar;
+            } else {
+                currentAvatarImg.src = 'https://i.pravatar.cc/100?img=0'; // Avatar por defecto
+            }
+        }
+
+        function openAvatarStore() {
+            difficultySelection.style.display = 'none';
+            avatarStore.style.display = 'block';
+            renderAvatars();
+        }
+
+        function renderAvatars() {
+            avatarStoreContainer.innerHTML = '';
+            avatars.forEach(avatar => {
+                const avatarDiv = document.createElement('div');
+                avatarDiv.classList.add('avatar-item');
+
+                const avatarImg = document.createElement('img');
+                avatarImg.src = avatar.src;
+                avatarDiv.appendChild(avatarImg);
+
+                const avatarButton = document.createElement('button');
+                if (avatar.unlocked) {
+                    avatarButton.innerText = 'Seleccionar';
+                    avatarButton.onclick = function() {
+                        currentAvatar = avatar.src;
+                        updateAvatar();
+                        alert('Has cambiado tu avatar.');
+                    };
+                } else {
+                    avatarButton.innerText = 'Comprar (' + avatar.price + ' pts)';
+                    avatarButton.onclick = function() {
+                        if (totalScore >= avatar.price) {
+                            totalScore -= avatar.price;
+                            updateTotalScore();
+                            avatar.unlocked = true;
+                            avatarButton.innerText = 'Seleccionar';
+                            avatarButton.onclick = function() {
+                                currentAvatar = avatar.src;
+                                updateAvatar();
+                                alert('Has cambiado tu avatar.');
+                            };
+                            alert('Has comprado un nuevo avatar.');
+                        } else {
+                            alert('No tienes suficientes puntos.');
+                        }
+                    };
+                }
+                avatarDiv.appendChild(avatarButton);
+                avatarStoreContainer.appendChild(avatarDiv);
+            });
         }
 
         // Eventos
@@ -285,32 +412,31 @@
                 return;
             }
             if (userAnswer === currentWord) {
-                score++;
-                document.getElementById('score').innerText = 'Puntuación: ' + score;
-                document.getElementById('message').innerText = '¡Correcto!';
-                checkWin();
-                if (score < 15) {
-                    setTimeout(setNewWord, 2000);
+                let pointsEarned = 0;
+                switch(difficulty) {
+                    case 'facil':
+                        pointsEarned = 1;
+                        break;
+                    case 'normal':
+                        pointsEarned = 2;
+                        break;
+                    case 'experto':
+                        pointsEarned = 3;
+                        break;
                 }
+                gameScore += pointsEarned;
+                document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+                document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' puntos.';
+                checkWin();
+                setTimeout(setNewWord, 2000);
             } else {
                 attempts--;
                 if (attempts > 0) {
                     document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
                     document.getElementById('message').innerText = 'Incorrecto. Inténtalo de nuevo.';
                 } else {
-                    score = Math.max(0, score - 1);
-                    document.getElementById('score').innerText = 'Puntuación: ' + score;
-                    if (score === 0) {
-                        document.getElementById('message').innerText = 'Has perdido la partida. Comenzando de nuevo...';
-                        setTimeout(function() {
-                            score = 0;
-                            document.getElementById('score').innerText = 'Puntuación: ' + score;
-                            setNewWord();
-                        }, 2000);
-                    } else {
-                        document.getElementById('message').innerText = 'Incorrecto. Pasando a la siguiente palabra.';
-                        setTimeout(setNewWord, 2000);
-                    }
+                    document.getElementById('message').innerText = 'Incorrecto. Pasando a la siguiente palabra.';
+                    setTimeout(setNewWord, 2000);
                 }
             }
         }
@@ -329,11 +455,26 @@
         restartButton.addEventListener('click', handleRestart, false);
         restartButton.addEventListener('touchend', handleRestart, false);
 
-        // Iniciar el juego mostrando la selección de dificultad
+        changeAvatarButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            openAvatarStore();
+        });
+
+        backToMenuButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            avatarStore.style.display = 'none';
+            difficultySelection.style.display = 'block';
+            updateTotalScore();
+        });
+
+        // Iniciar el juego
         window.onload = function() {
             difficultySelection.style.display = 'block';
             gameContainer.style.display = 'none';
             winMessage.style.display = 'none';
+            avatarStore.style.display = 'none';
+            updateTotalScore();
+            updateAvatar();
         };
     </script>
 </body>
