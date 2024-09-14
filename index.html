@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Juego de Crucigramas con Avatares</title>
+    <title>Juego de Crucigramas con Modificaciones</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Código CSS integrado -->
     <style>
@@ -30,8 +30,8 @@
             margin: 10px 0;
         }
 
-        /* Selección de Dificultad */
-        .difficulty-btn {
+        /* Botones Generales */
+        .btn {
             padding: 15px 30px;
             margin: 10px;
             font-size: 1em;
@@ -42,7 +42,7 @@
             border-radius: 5px;
         }
 
-        .difficulty-btn:hover {
+        .btn:hover {
             background-color: #0056b3;
         }
 
@@ -92,6 +92,22 @@
             margin-top: 10px;
         }
 
+        /* Botón Volver al Menú */
+        #back-to-main {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #back-to-main:hover {
+            background-color: #c82333;
+        }
+
         /* Mensaje de Victoria */
         #win-message h1 {
             font-size: 2.5em;
@@ -112,25 +128,25 @@
             background-color: #117a8b;
         }
 
-        /* Tienda de Avatares */
-        .avatar-store {
+        /* Tienda de Avatares y Pokémon */
+        .store {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
         }
 
-        .avatar-item {
+        .store-item {
             margin: 10px;
             text-align: center;
         }
 
-        .avatar-item img {
+        .store-item img {
             width: 100px;
             height: 100px;
             border-radius: 50%;
         }
 
-        .avatar-item button {
+        .store-item button {
             margin-top: 5px;
             padding: 5px 10px;
             font-size: 0.9em;
@@ -141,8 +157,27 @@
             border-radius: 5px;
         }
 
-        .avatar-item button:hover {
+        .store-item button:hover {
             background-color: #e0a800;
+        }
+
+        /* Pokédex */
+        #pokedex-icon {
+            width: 50px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .pokedex-entry {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .pokedex-entry img {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
         }
 
         /* Selección de Avatar */
@@ -160,7 +195,7 @@
         }
 
         @media (max-width: 600px) {
-            .difficulty-btn {
+            .btn {
                 width: 100%;
                 margin: 10px 0;
             }
@@ -177,24 +212,33 @@
     </style>
 </head>
 <body>
-    <!-- Selección de Dificultad -->
-    <div class="container" id="difficulty-selection">
+    <!-- Menú Principal -->
+    <div class="container" id="main-menu">
         <h1>Juego de Crucigramas</h1>
-        <h2>Selecciona la dificultad</h2>
-        <button class="difficulty-btn" data-level="facil">Fácil</button>
-        <button class="difficulty-btn" data-level="normal">Normal</button>
-        <button class="difficulty-btn" data-level="experto">Difícil</button>
+        <h2>Selecciona el modo de juego</h2>
+        <button class="btn" id="normal-mode">Modo Normal</button>
+        <button class="btn" id="pokemon-mode">Modo Pokémon</button>
         <div id="current-avatar-container">
             <h3>Puntos acumulados: <span id="total-score">0</span></h3>
             <h3>Avatar Actual:</h3>
             <img id="current-avatar" src="" alt="Avatar Actual">
             <button id="change-avatar">Cambiar Avatar</button>
+            <button id="open-pokemon-store">Tienda Pokémon</button>
         </div>
+    </div>
+
+    <!-- Selección de Dificultad -->
+    <div class="container" id="difficulty-selection" style="display: none;">
+        <h1>Modo Normal</h1>
+        <h2>Selecciona la dificultad</h2>
+        <button class="btn difficulty-btn" data-level="facil">Fácil</button>
+        <button class="btn difficulty-btn" data-level="normal">Normal</button>
+        <button class="btn difficulty-btn" data-level="experto">Difícil</button>
     </div>
 
     <!-- Contenedor del Juego -->
     <div class="container" id="game-container" style="display: none;">
-        <h1>Juego de Crucigramas</h1>
+        <h1 id="game-title">Juego de Crucigramas</h1>
         <div id="score">Puntuación de la Partida: 0</div>
         <div id="definition"></div>
         <div class="input-group">
@@ -203,26 +247,48 @@
         </div>
         <div id="attempts">Intentos restantes: 3</div>
         <div id="message"></div>
+        <button id="back-to-main">Volver al Menú</button>
     </div>
 
     <!-- Mensaje de Victoria -->
     <div class="container" id="win-message" style="display: none;">
         <h1>¡HAS GANADO!</h1>
-        <button id="restart">Jugar de Nuevo</button>
+        <button id="restart">Volver al Menú Principal</button>
     </div>
 
     <!-- Tienda de Avatares -->
     <div class="container" id="avatar-store" style="display: none;">
         <h1>Tienda de Avatares</h1>
         <h3>Tus Puntos: <span id="store-total-score">0</span></h3>
-        <div class="avatar-store">
+        <div class="store">
             <!-- Los avatares se generarán dinámicamente -->
         </div>
         <button id="back-to-menu">Volver al Menú</button>
     </div>
 
+    <!-- Tienda de Pokémon -->
+    <div class="container" id="pokemon-store" style="display: none;">
+        <h1>Tienda de Pokémon</h1>
+        <h3>Puntos Pokémon: <span id="pokemon-points">0</span></h3>
+        <img id="pokedex-icon" src="https://i.imgur.com/uwBWJ0u.png" alt="Pokédex">
+        <div class="store">
+            <!-- Los Pokémon se mostrarán aquí -->
+        </div>
+        <button id="back-to-menu-pokemon">Volver al Menú</button>
+    </div>
+
+    <!-- Pokédex -->
+    <div class="container" id="pokedex" style="display: none;">
+        <h1>Pokédex</h1>
+        <div id="pokedex-entries">
+            <!-- Entradas de la Pokédex -->
+        </div>
+        <button id="close-pokedex">Cerrar Pokédex</button>
+    </div>
+
     <!-- Código JavaScript integrado -->
     <script>
+        // Variables Globales
         let totalScore = 0;
         let gameScore = 0;
         let attempts = 3;
@@ -231,15 +297,19 @@
         let difficulty = '';
         let filteredWords = [];
         let currentAvatar = '';
+        let pokemonPoints = 0;
+        let capturedPokemon = [];
+
+        // Datos de Avatares
         let avatars = [
             { id: 1, src: 'https://i.pravatar.cc/100?img=1', price: 10, unlocked: false },
             { id: 2, src: 'https://i.pravatar.cc/100?img=2', price: 20, unlocked: false },
             { id: 3, src: 'https://i.pravatar.cc/100?img=3', price: 30, unlocked: false },
             { id: 4, src: 'https://i.pravatar.cc/100?img=4', price: 40, unlocked: false },
             { id: 5, src: 'https://i.pravatar.cc/100?img=5', price: 50, unlocked: false },
-            // Puedes agregar más avatares si lo deseas
         ];
 
+        // Palabras para el Modo Normal
         const words = [
             // Palabras de Dificultad Fácil
             { word: 'perro', definition: 'Animal doméstico conocido como el mejor amigo del hombre.', difficulty: 'facil' },
@@ -262,7 +332,20 @@
             // Puedes agregar más palabras y definiciones aquí clasificadas por dificultad
         ];
 
+        // Palabras para el Modo Pokémon
+        const pokemonWords = [
+            { word: 'pikachu', definition: 'Pokémon de tipo eléctrico conocido por ser el compañero de Ash.', difficulty: 'pokemon' },
+            { word: 'bulbasaur', definition: 'Pokémon inicial de tipo planta en la región de Kanto.', difficulty: 'pokemon' },
+            { word: 'charmander', definition: 'Pokémon inicial de tipo fuego en la región de Kanto.', difficulty: 'pokemon' },
+            { word: 'squirtle', definition: 'Pokémon inicial de tipo agua en la región de Kanto.', difficulty: 'pokemon' },
+            { word: 'mewtwo', definition: 'Pokémon legendario creado a partir del ADN de Mew.', difficulty: 'pokemon' },
+            // Puedes agregar más Pokémon aquí
+        ];
+
         // Elementos del DOM
+        const mainMenu = document.getElementById('main-menu');
+        const normalModeBtn = document.getElementById('normal-mode');
+        const pokemonModeBtn = document.getElementById('pokemon-mode');
         const difficultyButtons = document.querySelectorAll('.difficulty-btn');
         const gameContainer = document.getElementById('game-container');
         const difficultySelection = document.getElementById('difficulty-selection');
@@ -273,66 +356,49 @@
         const currentAvatarImg = document.getElementById('current-avatar');
         const changeAvatarButton = document.getElementById('change-avatar');
         const avatarStore = document.getElementById('avatar-store');
-        const avatarStoreContainer = document.querySelector('.avatar-store');
+        const avatarStoreContainer = document.querySelector('#avatar-store .store');
         const backToMenuButton = document.getElementById('back-to-menu');
+        const gameTitle = document.getElementById('game-title');
+        const pokemonStore = document.getElementById('pokemon-store');
+        const pokemonStoreContainer = document.querySelector('#pokemon-store .store');
+        const backToMenuPokemonButton = document.getElementById('back-to-menu-pokemon');
+        const pokemonPointsSpan = document.getElementById('pokemon-points');
+        const openPokemonStoreBtn = document.getElementById('open-pokemon-store');
+        const pokedexIcon = document.getElementById('pokedex-icon');
+        const pokedex = document.getElementById('pokedex');
+        const pokedexEntries = document.getElementById('pokedex-entries');
+        const closePokedexButton = document.getElementById('close-pokedex');
+        const backToMainButton = document.getElementById('back-to-main');
 
-        // Funciones
-        function getRandomWord() {
-            const randomIndex = Math.floor(Math.random() * filteredWords.length);
-            return filteredWords[randomIndex];
+        // Funciones de Guardado y Carga
+        function saveGame() {
+            const gameData = {
+                totalScore,
+                currentAvatar,
+                avatars,
+                pokemonPoints,
+                capturedPokemon
+            };
+            localStorage.setItem('gameData', JSON.stringify(gameData));
         }
 
-        function setNewWord() {
-            if (filteredWords.length === 0) {
-                document.getElementById('message').innerText = 'No hay más palabras en esta dificultad.';
-                return;
-            }
-            const wordObj = getRandomWord();
-            currentWord = wordObj.word.toLowerCase();
-            currentDefinition = wordObj.definition;
-            document.getElementById('definition').innerText = currentDefinition;
-            document.getElementById('answer').value = '';
-            document.getElementById('message').innerText = '';
-            attempts = 3;
-            document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
-        }
-
-        function startGame(selectedDifficulty) {
-            difficulty = selectedDifficulty;
-            filteredWords = words.filter(word => word.difficulty === difficulty);
-            gameScore = 0;
-            document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
-            difficultySelection.style.display = 'none';
-            winMessage.style.display = 'none';
-            avatarStore.style.display = 'none';
-            gameContainer.style.display = 'block';
-            setNewWord();
-        }
-
-        function checkWin() {
-            let winScore = 0;
-            switch(difficulty) {
-                case 'facil':
-                    winScore = 15;
-                    break;
-                case 'normal':
-                    winScore = 30;
-                    break;
-                case 'experto':
-                    winScore = 45;
-                    break;
-            }
-            if (gameScore >= winScore) {
-                totalScore += gameScore;
-                updateTotalScore();
-                gameContainer.style.display = 'none';
-                winMessage.style.display = 'block';
+        function loadGame() {
+            const savedData = JSON.parse(localStorage.getItem('gameData'));
+            if (savedData) {
+                totalScore = savedData.totalScore;
+                currentAvatar = savedData.currentAvatar;
+                avatars = savedData.avatars;
+                pokemonPoints = savedData.pokemonPoints || 0;
+                capturedPokemon = savedData.capturedPokemon || [];
             }
         }
 
+        // Funciones Generales
         function updateTotalScore() {
             totalScoreSpan.innerText = totalScore;
             storeTotalScoreSpan.innerText = totalScore;
+            pokemonPointsSpan.innerText = pokemonPoints;
+            saveGame();
         }
 
         function updateAvatar() {
@@ -341,10 +407,11 @@
             } else {
                 currentAvatarImg.src = 'https://i.pravatar.cc/100?img=0'; // Avatar por defecto
             }
+            saveGame();
         }
 
         function openAvatarStore() {
-            difficultySelection.style.display = 'none';
+            mainMenu.style.display = 'none';
             avatarStore.style.display = 'block';
             renderAvatars();
         }
@@ -353,7 +420,7 @@
             avatarStoreContainer.innerHTML = '';
             avatars.forEach(avatar => {
                 const avatarDiv = document.createElement('div');
-                avatarDiv.classList.add('avatar-item');
+                avatarDiv.classList.add('store-item');
 
                 const avatarImg = document.createElement('img');
                 avatarImg.src = avatar.src;
@@ -391,88 +458,291 @@
             });
         }
 
-        // Eventos
-        function handleDifficultySelection(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            startGame(this.getAttribute('data-level'));
+        function openPokemonStore() {
+            mainMenu.style.display = 'none';
+            pokemonStore.style.display = 'block';
+            renderPokemonStore();
         }
 
-        difficultyButtons.forEach(button => {
-            button.addEventListener('click', handleDifficultySelection, false);
-            button.addEventListener('touchend', handleDifficultySelection, false);
+        function renderPokemonStore() {
+            pokemonStoreContainer.innerHTML = '';
+            const pokemonButton = document.createElement('button');
+            pokemonButton.innerText = 'Comprar Pokémon Aleatorio (10 pts)';
+            pokemonButton.onclick = function() {
+                if (pokemonPoints >= 10) {
+                    pokemonPoints -= 10;
+                    updateTotalScore();
+                    const randomPokemon = pokemonWords[Math.floor(Math.random() * pokemonWords.length)];
+                    if (!capturedPokemon.includes(randomPokemon.word)) {
+                        capturedPokemon.push(randomPokemon.word);
+                        alert('¡Has capturado a ' + capitalizeFirstLetter(randomPokemon.word) + '!');
+                    } else {
+                        alert('Ya tienes a ' + capitalizeFirstLetter(randomPokemon.word) + '.');
+                    }
+                    saveGame();
+                    renderPokemonStore();
+                } else {
+                    alert('No tienes suficientes puntos Pokémon.');
+                }
+            };
+            pokemonStoreContainer.appendChild(pokemonButton);
+        }
+
+        function openPokedex() {
+            pokedex.style.display = 'block';
+            pokemonStore.style.display = 'none';
+            renderPokedex();
+        }
+
+        function renderPokedex() {
+            pokedexEntries.innerHTML = '';
+            if (capturedPokemon.length > 0) {
+                capturedPokemon.forEach(pokemonName => {
+                    const pokedexEntry = document.createElement('div');
+                    pokedexEntry.classList.add('pokedex-entry');
+
+                    const pokemonImg = document.createElement('img');
+                    pokemonImg.src = `https://img.pokemondb.net/artwork/large/${pokemonName}.jpg`;
+                    pokemonImg.onerror = function() {
+                        pokemonImg.src = 'https://via.placeholder.com/50';
+                    };
+
+                    const pokemonText = document.createElement('span');
+                    pokemonText.innerText = capitalizeFirstLetter(pokemonName);
+
+                    pokedexEntry.appendChild(pokemonImg);
+                    pokedexEntry.appendChild(pokemonText);
+                    pokedexEntries.appendChild(pokedexEntry);
+                });
+            } else {
+                pokedexEntries.innerHTML = '<p>No has capturado ningún Pokémon aún.</p>';
+            }
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Funciones del Juego
+        function getRandomWord() {
+            const randomIndex = Math.floor(Math.random() * filteredWords.length);
+            return filteredWords[randomIndex];
+        }
+
+        function setNewWord() {
+            if (filteredWords.length === 0) {
+                document.getElementById('message').innerText = 'No hay más palabras en este modo.';
+                return;
+            }
+            const wordObj = getRandomWord();
+            currentWord = wordObj.word.toLowerCase();
+            currentDefinition = wordObj.definition;
+            document.getElementById('definition').innerText = currentDefinition;
+            document.getElementById('answer').value = '';
+            document.getElementById('message').innerText = '';
+            attempts = 3;
+            document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
+        }
+
+        function startGame(selectedDifficulty) {
+            difficulty = selectedDifficulty;
+            if (difficulty === 'pokemon') {
+                filteredWords = [...pokemonWords];
+                gameTitle.innerText = 'Modo Pokémon';
+            } else {
+                filteredWords = words.filter(word => word.difficulty === difficulty);
+                gameTitle.innerText = 'Modo Normal';
+            }
+            gameScore = 0;
+            document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+            mainMenu.style.display = 'none';
+            difficultySelection.style.display = 'none';
+            winMessage.style.display = 'none';
+            avatarStore.style.display = 'none';
+            pokemonStore.style.display = 'none';
+            pokedex.style.display = 'none';
+            gameContainer.style.display = 'block';
+            setNewWord();
+        }
+
+        function checkWin() {
+            let winScore = 0;
+            if (difficulty === 'pokemon') {
+                winScore = 10; // Puedes ajustar este valor
+                if (gameScore >= winScore) {
+                    pokemonPoints += gameScore;
+                    updateTotalScore();
+                    gameScore = 0; // Reiniciar gameScore
+                    gameContainer.style.display = 'none';
+                    winMessage.style.display = 'block';
+                }
+            } else {
+                switch(difficulty) {
+                    case 'facil':
+                        winScore = 15;
+                        break;
+                    case 'normal':
+                        winScore = 30;
+                        break;
+                    case 'experto':
+                        winScore = 45;
+                        break;
+                }
+                if (gameScore >= winScore) {
+                    totalScore += gameScore;
+                    updateTotalScore();
+                    gameScore = 0; // Reiniciar gameScore
+                    gameContainer.style.display = 'none';
+                    winMessage.style.display = 'block';
+                }
+            }
+        }
+
+        // Eventos
+        normalModeBtn.addEventListener('click', function() {
+            mainMenu.style.display = 'none';
+            difficultySelection.style.display = 'block';
         });
 
-        function handleSubmit(event) {
-            event.preventDefault();
-            event.stopPropagation();
+        pokemonModeBtn.addEventListener('click', function() {
+            startGame('pokemon');
+        });
+
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                startGame(this.getAttribute('data-level'));
+            });
+        });
+
+        document.getElementById('submit').addEventListener('click', function() {
             const userAnswer = document.getElementById('answer').value.toLowerCase().trim();
             if (userAnswer === '') {
                 document.getElementById('message').innerText = 'Por favor, ingresa una respuesta.';
                 return;
             }
             if (userAnswer === currentWord) {
+                // Respuesta correcta
                 let pointsEarned = 0;
-                switch(difficulty) {
-                    case 'facil':
-                        pointsEarned = 1;
-                        break;
-                    case 'normal':
-                        pointsEarned = 2;
-                        break;
-                    case 'experto':
-                        pointsEarned = 3;
-                        break;
+                if (difficulty === 'pokemon') {
+                    pointsEarned = 1; // Puedes ajustar este valor
+                    gameScore += pointsEarned;
+                    document.getElementById('score').innerText = 'Puntos Pokémon Ganados: ' + gameScore;
+                    document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' punto(s) Pokémon.';
+                } else {
+                    switch(difficulty) {
+                        case 'facil':
+                            pointsEarned = 1;
+                            break;
+                        case 'normal':
+                            pointsEarned = 2;
+                            break;
+                        case 'experto':
+                            pointsEarned = 3;
+                            break;
+                    }
+                    gameScore += pointsEarned;
+                    document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+                    document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' punto(s).';
                 }
-                gameScore += pointsEarned;
-                document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
-                document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' puntos.';
                 checkWin();
                 setTimeout(setNewWord, 2000);
             } else {
+                // Respuesta incorrecta
                 attempts--;
                 if (attempts > 0) {
                     document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
                     document.getElementById('message').innerText = 'Incorrecto. Inténtalo de nuevo.';
                 } else {
-                    document.getElementById('message').innerText = 'Incorrecto. Pasando a la siguiente palabra.';
+                    // Restar 1 punto después de agotar los intentos
+                    if (difficulty === 'pokemon') {
+                        if (gameScore > 0) {
+                            gameScore -= 1;
+                        }
+                        pokemonPoints = pokemonPoints > 0 ? pokemonPoints - 1 : 0;
+                        document.getElementById('score').innerText = 'Puntos Pokémon Ganados: ' + gameScore;
+                    } else {
+                        if (gameScore > 0) {
+                            gameScore -= 1;
+                        }
+                        totalScore = totalScore > 0 ? totalScore - 1 : 0;
+                        document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+                    }
+                    updateTotalScore();
+                    document.getElementById('message').innerText = 'Incorrecto. Has perdido 1 punto. Pasando a la siguiente palabra.';
                     setTimeout(setNewWord, 2000);
                 }
             }
-        }
+        });
 
-        document.getElementById('submit').addEventListener('click', handleSubmit, false);
-        document.getElementById('submit').addEventListener('touchend', handleSubmit, false);
+        // Modificación en el evento del botón "Volver al Menú"
+        backToMainButton.addEventListener('click', function() {
+            let confirmExit = confirm('¿Estás seguro de que quieres volver al menú? Perderás cinco puntos');
+            if (confirmExit) {
+                // Sumar puntos acumulados en la partida al total
+                if (difficulty === 'pokemon') {
+                    pokemonPoints += gameScore;
+                    // Restar 5 puntos
+                    pokemonPoints = pokemonPoints >= 5 ? pokemonPoints - 5 : 0;
+                } else {
+                    totalScore += gameScore;
+                    // Restar 5 puntos
+                    totalScore = totalScore >= 5 ? totalScore - 5 : 0;
+                }
+                gameScore = 0; // Reiniciar gameScore
+                updateTotalScore();
+                saveGame();
+                gameContainer.style.display = 'none';
+                mainMenu.style.display = 'block';
+            }
+            // Si cancela, no hacemos nada y permanece en el juego
+        });
 
-        function handleRestart(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            difficultySelection.style.display = 'block';
-            winMessage.style.display = 'none';
+        restartButton.addEventListener('click', function() {
+            mainMenu.style.display = 'block';
+            difficultySelection.style.display = 'none';
             gameContainer.style.display = 'none';
-        }
+            winMessage.style.display = 'none';
+        });
 
-        restartButton.addEventListener('click', handleRestart, false);
-        restartButton.addEventListener('touchend', handleRestart, false);
-
-        changeAvatarButton.addEventListener('click', function(event) {
-            event.preventDefault();
+        changeAvatarButton.addEventListener('click', function() {
             openAvatarStore();
         });
 
-        backToMenuButton.addEventListener('click', function(event) {
-            event.preventDefault();
+        openPokemonStoreBtn.addEventListener('click', function() {
+            openPokemonStore();
+        });
+
+        backToMenuButton.addEventListener('click', function() {
             avatarStore.style.display = 'none';
-            difficultySelection.style.display = 'block';
+            mainMenu.style.display = 'block';
             updateTotalScore();
         });
 
-        // Iniciar el juego
+        backToMenuPokemonButton.addEventListener('click', function() {
+            pokemonStore.style.display = 'none';
+            mainMenu.style.display = 'block';
+            updateTotalScore();
+        });
+
+        pokedexIcon.addEventListener('click', function() {
+            openPokedex();
+        });
+
+        closePokedexButton.addEventListener('click', function() {
+            pokedex.style.display = 'none';
+            pokemonStore.style.display = 'block';
+        });
+
+        // Inicialización
         window.onload = function() {
-            difficultySelection.style.display = 'block';
+            loadGame();
+            mainMenu.style.display = 'block';
+            difficultySelection.style.display = 'none';
             gameContainer.style.display = 'none';
             winMessage.style.display = 'none';
             avatarStore.style.display = 'none';
+            pokemonStore.style.display = 'none';
+            pokedex.style.display = 'none';
             updateTotalScore();
             updateAvatar();
         };
