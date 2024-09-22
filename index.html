@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Juego de Crucigramas con Modificaciones</title>
+    <title>Juego de Crucigramas Mejorado</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Código CSS integrado -->
     <style>
@@ -84,12 +84,48 @@
         #message {
             margin-top: 20px;
             font-size: 1.1em;
-            color: #d9534f;
+            color: #000; /* Cambiado a negro */
+        }
+
+        #event-message {
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: #000; /* Cambiado a negro */
+            font-weight: bold;
+            animation: glow 1s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px #ff5733;
+            }
+            to {
+                text-shadow: 0 0 20px #ffbd69;
+            }
         }
 
         #attempts, #score {
             font-size: 1.1em;
             margin-top: 10px;
+        }
+
+        /* Estilos para Eventos Especiales */
+        .special-event {
+            background: linear-gradient(135deg, #f06, #ffba08);
+            color: #000;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        /* Ocultar elemento */
+        .hidden {
+            display: none;
+        }
+
+        /* Estilos épicos para eventos */
+        .epic-background {
+            background: linear-gradient(135deg, #f06, #ffba08);
+            color: #000; /* Cambiado a negro */
         }
 
         /* Botón Volver al Menú */
@@ -161,6 +197,11 @@
             background-color: #e0a800;
         }
 
+        /* Tienda Especial */
+        #special-store h1 {
+            color: #8e44ad;
+        }
+
         /* Pokédex */
         #pokedex-icon {
             width: 50px;
@@ -194,6 +235,30 @@
             margin: 10px auto;
         }
 
+        /* Opciones para el evento de Cultura Popular */
+        .option-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .option-button {
+            padding: 10px 20px;
+            margin: 5px 0;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .option-button:hover {
+            background-color: #0056b3;
+        }
+
         @media (max-width: 600px) {
             .btn {
                 width: 100%;
@@ -220,10 +285,12 @@
         <button class="btn" id="pokemon-mode">Modo Pokémon</button>
         <div id="current-avatar-container">
             <h3>Puntos acumulados: <span id="total-score">0</span></h3>
+            <h3>Puntos Especiales: <span id="special-points">0</span></h3>
             <h3>Avatar Actual:</h3>
             <img id="current-avatar" src="" alt="Avatar Actual">
             <button id="change-avatar">Cambiar Avatar</button>
             <button id="open-pokemon-store">Tienda Pokémon</button>
+            <button id="open-special-store">Tienda Especial</button>
         </div>
     </div>
 
@@ -241,11 +308,12 @@
         <h1 id="game-title">Juego de Crucigramas</h1>
         <div id="score">Puntuación de la Partida: 0</div>
         <div id="definition"></div>
-        <div class="input-group">
+        <div class="input-group" id="input-group">
             <input type="text" id="answer" placeholder="Escribe tu respuesta aquí">
             <button id="submit">Enviar</button>
         </div>
         <div id="attempts">Intentos restantes: 3</div>
+        <div id="event-message"></div>
         <div id="message"></div>
         <button id="back-to-main">Volver al Menú</button>
     </div>
@@ -260,10 +328,20 @@
     <div class="container" id="avatar-store" style="display: none;">
         <h1>Tienda de Avatares</h1>
         <h3>Tus Puntos: <span id="store-total-score">0</span></h3>
-        <div class="store">
+        <div class="store" id="avatar-store-container">
             <!-- Los avatares se generarán dinámicamente -->
         </div>
         <button id="back-to-menu">Volver al Menú</button>
+    </div>
+
+    <!-- Tienda Especial -->
+    <div class="container" id="special-store" style="display: none;">
+        <h1>Tienda Especial</h1>
+        <h3>Puntos Especiales: <span id="store-special-points">0</span></h3>
+        <div class="store" id="special-store-container">
+            <!-- Los avatares especiales se generarán dinámicamente -->
+        </div>
+        <button id="back-to-menu-special">Volver al Menú</button>
     </div>
 
     <!-- Tienda de Pokémon -->
@@ -271,7 +349,7 @@
         <h1>Tienda de Pokémon</h1>
         <h3>Puntos Pokémon: <span id="pokemon-points">0</span></h3>
         <img id="pokedex-icon" src="https://i.imgur.com/uwBWJ0u.png" alt="Pokédex">
-        <div class="store">
+        <div class="store" id="pokemon-store-container">
             <!-- Los Pokémon se mostrarán aquí -->
         </div>
         <button id="back-to-menu-pokemon">Volver al Menú</button>
@@ -299,6 +377,14 @@
         let currentAvatar = '';
         let pokemonPoints = 0;
         let capturedPokemon = [];
+        let specialPoints = 0;
+        let specialEventActive = false;
+        let eventMultiplier = 1;
+        let nextCorrectAnswerBonus = false;
+        let questionCount = 0; // Para llevar el conteo de preguntas
+        let languageEventActive = false; // Indica si el multiplicador del evento de idiomas está activo
+        let eventJustOccurred = false; // Evita que dos eventos ocurran seguidos
+        let currentSpecialEvent = ''; // Nuevo: Tipo de evento especial actual
 
         // Datos de Avatares
         let avatars = [
@@ -309,6 +395,15 @@
             { id: 5, src: 'https://i.pravatar.cc/100?img=5', price: 50, unlocked: false },
         ];
 
+        // Avatares Especiales
+        let specialAvatars = [
+            { id: 101, src: 'https://i.pravatar.cc/100?img=6', price: 5, unlocked: false },
+            { id: 102, src: 'https://i.pravatar.cc/100?img=7', price: 10, unlocked: false },
+            { id: 103, src: 'https://i.pravatar.cc/100?img=8', price: 15, unlocked: false },
+            { id: 104, src: 'https://i.pravatar.cc/100?img=9', price: 20, unlocked: false },
+            // Más avatares especiales
+        ];
+
         // Palabras para el Modo Normal
         const words = [
             // Palabras de Dificultad Fácil
@@ -317,19 +412,224 @@
             { word: 'sol', definition: 'Estrella luminosa que es el centro de nuestro sistema solar.', difficulty: 'facil' },
             { word: 'casa', definition: 'Lugar donde habita una familia.', difficulty: 'facil' },
             { word: 'libro', definition: 'Conjunto de hojas encuadernadas que contienen texto o imágenes.', difficulty: 'facil' },
+            { word: 'árbol', definition: 'Planta de tronco leñoso que se ramifica a cierta altura del suelo.', difficulty: 'facil' },
+            { word: 'agua', definition: 'Líquido vital, incoloro, inodoro e insípido.', difficulty: 'facil' },
+            { word: 'cielo', definition: 'Espacio en el que se mueven los astros y que parece rodear la Tierra.', difficulty: 'facil' },
+            { word: 'flor', definition: 'Parte de las plantas que contiene los órganos reproductores y está formada por hojas de colores.', difficulty: 'facil' },
+            { word: 'niño', definition: 'Persona que está en la etapa de la infancia.', difficulty: 'facil' },
+            { word: 'playa', definition: 'Ribera del mar o de un río grande, formada de arena.', difficulty: 'facil' },
+            { word: 'comida', definition: 'Conjunto de cosas que se comen y beben para sobrevivir.', difficulty: 'facil' },
+            { word: 'montaña', definition: 'Gran elevación natural del terreno.', difficulty: 'facil' },
+            { word: 'río', definition: 'Corriente natural de agua que fluye continuamente.', difficulty: 'facil' },
+            { word: 'coche', definition: 'Vehículo automóvil de cuatro ruedas para circular por tierra.', difficulty: 'facil' },
+            { word: 'silla', definition: 'Asiento con respaldo, por lo general con cuatro patas.', difficulty: 'facil' },
+            { word: 'mesa', definition: 'Mueble formado por un tablero horizontal sostenido por uno o varios pies.', difficulty: 'facil' },
+            { word: 'ventana', definition: 'Abertura en un muro para dejar pasar la luz y el aire.', difficulty: 'facil' },
+            { word: 'puerta', definition: 'Abertura en una pared o cerca que permite entrar y salir.', difficulty: 'facil' },
+            { word: 'escuela', definition: 'Lugar donde se imparte enseñanza.', difficulty: 'facil' },
+            { word: 'avión', definition: 'Aeronave más pesada que el aire, con alas y motor.', difficulty: 'facil' },
+            { word: 'tren', definition: 'Medio de transporte que se desplaza sobre rieles.', difficulty: 'facil' },
+            { word: 'zapato', definition: 'Calzado que cubre el pie hasta el tobillo.', difficulty: 'facil' },
+            { word: 'reloj', definition: 'Instrumento para medir el tiempo.', difficulty: 'facil' },
+            { word: 'manzana', definition: 'Fruto comestible del manzano, de piel fina y pulpa blanca.', difficulty: 'facil' },
+            { word: 'cuchara', definition: 'Utensilio para comer líquidos o semisólidos.', difficulty: 'facil' },
+            { word: 'teléfono', definition: 'Dispositivo para transmitir sonidos a distancia por medios eléctricos.', difficulty: 'facil' },
+            { word: 'camisa', definition: 'Prenda de vestir que cubre el torso, generalmente con mangas.', difficulty: 'facil' },
+            { word: 'pantalón', definition: 'Prenda de vestir que cubre desde la cintura hasta los pies.', difficulty: 'facil' },
+            { word: 'leche', definition: 'Líquido blanco producido por las glándulas mamarias de las hembras de los mamíferos.', difficulty: 'facil' },
+            { word: 'guitarra', definition: 'Instrumento musical de cuerda pulsada.', difficulty: 'facil' },
+            { word: 'pelota', definition: 'Objeto esférico utilizado en diversos deportes y juegos.', difficulty: 'facil' },
+            { word: 'mar', definition: 'Masa de agua salada que cubre la mayor parte de la superficie terrestre.', difficulty: 'facil' },
+            { word: 'arena', definition: 'Conjunto de partículas de rocas disgregadas en las playas y desiertos.', difficulty: 'facil' },
+            { word: 'pan', definition: 'Alimento hecho con harina, agua y levadura.', difficulty: 'facil' },
+            { word: 'queso', definition: 'Alimento sólido obtenido por maduración de la cuajada de la leche.', difficulty: 'facil' },
+            { word: 'pluma', definition: 'Estructura que cubre el cuerpo de las aves.', difficulty: 'facil' },
+            { word: 'pájaro', definition: 'Animal vertebrado de sangre caliente, con plumas y alas.', difficulty: 'facil' },
+            { word: 'luna', definition: 'Único satélite natural de la Tierra.', difficulty: 'facil' },
+            { word: 'estrella', definition: 'Cuerpo celeste que brilla con luz propia en el cielo.', difficulty: 'facil' },
+            { word: 'nube', definition: 'Masa visible formada por gotas de agua suspendidas en la atmósfera.', difficulty: 'facil' },
+            { word: 'lluvia', definition: 'Precipitación de gotas de agua desde la atmósfera.', difficulty: 'facil' },
+            { word: 'nieve', definition: 'Precipitación de pequeños cristales de hielo.', difficulty: 'facil' },
+            { word: 'viento', definition: 'Corriente de aire que se produce en la atmósfera.', difficulty: 'facil' },
+            { word: 'fuego', definition: 'Combustión que emite calor y luz.', difficulty: 'facil' },
+            { word: 'hielo', definition: 'Agua congelada, estado sólido del agua por baja temperatura.', difficulty: 'facil' },
+            { word: 'papel', definition: 'Material delgado producido a partir de pulpa de madera.', difficulty: 'facil' },
+            { word: 'tijera', definition: 'Instrumento para cortar formado por dos hojas de metal unidas en un eje.', difficulty: 'facil' },
+            { word: 'pegamento', definition: 'Sustancia que sirve para pegar cosas.', difficulty: 'facil' },
+            { word: 'cama', definition: 'Mueble usado para dormir.', difficulty: 'facil' },
+            { word: 'pizarra', definition: 'Superficie para escribir y borrar fácilmente.', difficulty: 'facil' },
+            { word: 'cuaderno', definition: 'Conjunto de hojas de papel unidas para escribir.', difficulty: 'facil' },
+            { word: 'bolígrafo', definition: 'Instrumento de escritura con tinta.', difficulty: 'facil' },
+            { word: 'amigo', definition: 'Persona con la que se tiene una relación de afecto y confianza.', difficulty: 'facil' },
+            { word: 'ordenador', definition: 'Máquina electrónica que procesa datos.', difficulty: 'facil' },
+            { word: 'ventilador', definition: 'Aparato eléctrico que produce corriente de aire.', difficulty: 'facil' },
+            { word: 'televisión', definition: 'Sistema de transmisión de imágenes y sonidos a distancia.', difficulty: 'facil' },
+            { word: 'radio', definition: 'Aparato que recibe y reproduce señales de audio.', difficulty: 'facil' },
+            { word: 'bicicleta', definition: 'Vehículo de dos ruedas impulsado por pedales.', difficulty: 'facil' },
+            { word: 'tren', definition: 'Medio de transporte que circula sobre rieles.', difficulty: 'facil' },
+            { word: 'barco', definition: 'Embarcación de gran tamaño para navegar por el agua.', difficulty: 'facil' },
+            { word: 'cuchillo', definition: 'Utensilio con hoja afilada usado para cortar.', difficulty: 'facil' },
+            { word: 'tenedor', definition: 'Utensilio de mesa con púas para pinchar los alimentos.', difficulty: 'facil' },
+            { word: 'piano', definition: 'Instrumento musical de cuerdas percutidas con teclado.', difficulty: 'facil' },
+            { word: 'violín', definition: 'Instrumento musical de cuatro cuerdas que se toca con arco.', difficulty: 'facil' },
+            { word: 'trompeta', definition: 'Instrumento musical de viento metal.', difficulty: 'facil' },
+            { word: 'martillo', definition: 'Herramienta de percusión para golpear.', difficulty: 'facil' },
+            { word: 'destornillador', definition: 'Herramienta para apretar o aflojar tornillos.', difficulty: 'facil' },
+            { word: 'espejo', definition: 'Superficie que refleja la luz y las imágenes.', difficulty: 'facil' },
+            { word: 'baño', definition: 'Habitación con instalaciones para asearse.', difficulty: 'facil' },
+            { word: 'cocina', definition: 'Lugar donde se preparan alimentos.', difficulty: 'facil' },
+            { word: 'gafas', definition: 'Lentes para corregir la visión o proteger los ojos.', difficulty: 'facil' },
+            { word: 'sombrero', definition: 'Prenda de vestir que cubre la cabeza.', difficulty: 'facil' },
+            { word: 'cepillo', definition: 'Utensilio con cerdas usado para limpiar o peinar.', difficulty: 'facil' },
+            { word: 'jabón', definition: 'Producto que se usa con agua para lavar o limpiar.', difficulty: 'facil' },
+            { word: 'toalla', definition: 'Paño utilizado para secar la piel.', difficulty: 'facil' },
+            { word: 'carpeta', definition: 'Objeto para guardar y organizar documentos.', difficulty: 'facil' },
+            { word: 'periódico', definition: 'Publicación diaria que contiene noticias.', difficulty: 'facil' },
+            { word: 'revista', definition: 'Publicación periódica con artículos e imágenes.', difficulty: 'facil' },
+            { word: 'paraguas', definition: 'Objeto portátil para protegerse de la lluvia.', difficulty: 'facil' },
+            { word: 'jardín', definition: 'Terreno donde se cultivan plantas y flores.', difficulty: 'facil' },
+            { word: 'tigre', definition: 'Felino grande de pelaje anaranjado con rayas negras.', difficulty: 'facil' },
+            { word: 'elefante', definition: 'Mamífero de gran tamaño con trompa y colmillos.', difficulty: 'facil' },
+            // Añade más palabras fáciles aquí
+            // ...
+
             // Palabras de Dificultad Normal
             { word: 'computadora', definition: 'Dispositivo electrónico usado para procesar datos.', difficulty: 'normal' },
             { word: 'bicicleta', definition: 'Vehículo de dos ruedas impulsado por pedales.', difficulty: 'normal' },
             { word: 'astronomía', definition: 'Ciencia que estudia los cuerpos celestes.', difficulty: 'normal' },
             { word: 'montaña', definition: 'Gran elevación natural del terreno.', difficulty: 'normal' },
             { word: 'electricidad', definition: 'Forma de energía resultante de la existencia de una diferencia de potencial.', difficulty: 'normal' },
+            { word: 'química', definition: 'Ciencia que estudia la composición y propiedades de la materia.', difficulty: 'normal' },
+            { word: 'filosofía', definition: 'Estudio de las cuestiones generales y fundamentales acerca de la existencia y el conocimiento.', difficulty: 'normal' },
+            { word: 'biología', definition: 'Ciencia que estudia a los seres vivos.', difficulty: 'normal' },
+            { word: 'psicología', definition: 'Ciencia que estudia la mente y el comportamiento humano.', difficulty: 'normal' },
+            { word: 'sociología', definition: 'Ciencia que estudia la sociedad y las relaciones humanas.', difficulty: 'normal' },
+            { word: 'antropología', definition: 'Estudio de los seres humanos en aspectos físicos y culturales.', difficulty: 'normal' },
+            { word: 'geología', definition: 'Ciencia que estudia la composición y estructura interna de la Tierra.', difficulty: 'normal' },
+            { word: 'ecología', definition: 'Ciencia que estudia las relaciones de los seres vivos con su entorno.', difficulty: 'normal' },
+            { word: 'economía', definition: 'Ciencia que estudia la producción y distribución de bienes y servicios.', difficulty: 'normal' },
+            { word: 'arquitectura', definition: 'Arte y técnica de diseñar y construir edificios.', difficulty: 'normal' },
+            { word: 'ingeniería', definition: 'Aplicación de conocimientos científicos para la invención y mejora de tecnología.', difficulty: 'normal' },
+            { word: 'literatura', definition: 'Arte que emplea como medio de expresión la palabra.', difficulty: 'normal' },
+            { word: 'historia', definition: 'Disciplina que estudia y narra cronológicamente los acontecimientos pasados.', difficulty: 'normal' },
+            { word: 'matemáticas', definition: 'Ciencia que estudia las propiedades de los entes abstractos y sus relaciones.', difficulty: 'normal' },
+            { word: 'estadística', definition: 'Ciencia que utiliza conjuntos de datos numéricos para obtener inferencias.', difficulty: 'normal' },
+            { word: 'filología', definition: 'Estudio de los textos y de su historia.', difficulty: 'normal' },
+            { word: 'lingüística', definition: 'Ciencia que estudia el lenguaje y las lenguas.', difficulty: 'normal' },
+            { word: 'poesía', definition: 'Género literario que se expresa con ritmo y belleza.', difficulty: 'normal' },
+            { word: 'pintura', definition: 'Arte de representar imágenes sobre una superficie con pigmentos.', difficulty: 'normal' },
+            { word: 'escultura', definition: 'Arte de moldear materiales para crear formas en volumen.', difficulty: 'normal' },
+            { word: 'fotografía', definition: 'Arte y técnica de obtener imágenes duraderas debido a la acción de la luz.', difficulty: 'normal' },
+            { word: 'cine', definition: 'Arte de narrar historias a través de imágenes en movimiento.', difficulty: 'normal' },
+            { word: 'música', definition: 'Arte de combinar los sonidos de forma armoniosa.', difficulty: 'normal' },
+            { word: 'tecnología', definition: 'Conjunto de conocimientos y técnicas aplicados de forma lógica y ordenada.', difficulty: 'normal' },
+            { word: 'informática', definition: 'Ciencia que estudia el tratamiento automático de la información.', difficulty: 'normal' },
+            { word: 'robótica', definition: 'Rama de la tecnología que estudia el diseño y construcción de robots.', difficulty: 'normal' },
+            { word: 'nanotecnología', definition: 'Manipulación de la materia a escala atómica o molecular.', difficulty: 'normal' },
+            { word: 'genética', definition: 'Ciencia que estudia la herencia biológica.', difficulty: 'normal' },
+            { word: 'medicina', definition: 'Ciencia dedicada al estudio de la vida, la salud y las enfermedades humanas.', difficulty: 'normal' },
+            { word: 'farmacología', definition: 'Ciencia que estudia las propiedades de los medicamentos.', difficulty: 'normal' },
+            { word: 'meteorología', definition: 'Ciencia que estudia los fenómenos atmosféricos.', difficulty: 'normal' },
+            { word: 'zoología', definition: 'Ciencia que estudia los animales.', difficulty: 'normal' },
+            { word: 'botánica', definition: 'Ciencia que estudia las plantas.', difficulty: 'normal' },
+            { word: 'física', definition: 'Ciencia que estudia las propiedades de la materia y la energía.', difficulty: 'normal' },
+            { word: 'energía', definition: 'Capacidad para realizar un trabajo.', difficulty: 'normal' },
+            { word: 'teoría', definition: 'Conjunto de ideas que explican un fenómeno.', difficulty: 'normal' },
+            { word: 'hipótesis', definition: 'Suposición de algo posible para sacar de ello una consecuencia.', difficulty: 'normal' },
+            { word: 'método', definition: 'Modo de decir o hacer con orden.', difficulty: 'normal' },
+            { word: 'experimento', definition: 'Prueba realizada para demostrar una hipótesis.', difficulty: 'normal' },
+            { word: 'análisis', definition: 'Examen detallado de algo para conocer sus características.', difficulty: 'normal' },
+            { word: 'síntesis', definition: 'Composición de un todo por la reunión de sus partes.', difficulty: 'normal' },
+            { word: 'modelo', definition: 'Representación ideal de algo que se toma como referencia.', difficulty: 'normal' },
+            { word: 'paradigma', definition: 'Ejemplo o modelo de algo.', difficulty: 'normal' },
+            { word: 'ética', definition: 'Disciplina que estudia el bien y el mal y sus relaciones con la moral.', difficulty: 'normal' },
+            { word: 'ontología', definition: 'Parte de la filosofía que trata del ser en general y de sus propiedades.', difficulty: 'normal' },
+            { word: 'deontología', definition: 'Estudio de los deberes y principios éticos.', difficulty: 'normal' },
+            { word: 'semántica', definition: 'Estudio del significado de las palabras y expresiones.', difficulty: 'normal' },
+            { word: 'pragmática', definition: 'Estudio del lenguaje en relación con sus usuarios.', difficulty: 'normal' },
+            { word: 'hermenéutica', definition: 'Teoría de la interpretación de textos.', difficulty: 'normal' },
+            { word: 'epistemología', definition: 'Estudio de los fundamentos y métodos del conocimiento científico.', difficulty: 'normal' },
+            { word: 'axiología', definition: 'Teoría de los valores.', difficulty: 'normal' },
+            { word: 'estética', definition: 'Estudio de la belleza y el arte.', difficulty: 'normal' },
+            { word: 'dialéctica', definition: 'Método de razonamiento que contrapone tesis y antítesis.', difficulty: 'normal' },
+            { word: 'ontogenia', definition: 'Desarrollo individual de un organismo.', difficulty: 'normal' },
+            { word: 'filogenia', definition: 'Historia evolutiva de una especie.', difficulty: 'normal' },
+            { word: 'psicopatología', definition: 'Estudio de los trastornos mentales.', difficulty: 'normal' },
+            { word: 'psicofarmacología', definition: 'Estudio de los efectos de los fármacos en el comportamiento.', difficulty: 'normal' },
+            { word: 'neurociencia', definition: 'Estudio del sistema nervioso y el cerebro.', difficulty: 'normal' },
+            { word: 'sinecdoque', definition: 'Figura retórica que designa el todo por la parte o viceversa.', difficulty: 'normal' },
+            { word: 'metonimia', definition: 'Figura retórica que consiste en designar una cosa con el nombre de otra.', difficulty: 'normal' },
+            { word: 'hipérbole', definition: 'Exageración de una circunstancia, relato o noticia.', difficulty: 'normal' },
+            { word: 'personificación', definition: 'Atribución de cualidades humanas a seres inanimados.', difficulty: 'normal' },
+            { word: 'aliteración', definition: 'Repetición de sonidos en una frase para producir un efecto sonoro.', difficulty: 'normal' },
+            { word: 'antítesis', definition: 'Contraposición de dos palabras o ideas de significado contrario.', difficulty: 'normal' },
+            // Añade más palabras normales aquí
+            // ...
+            
             // Palabras de Dificultad Difícil
             { word: 'criptografía', definition: 'Ciencia de escribir con clave secreta o de un modo enigmático.', difficulty: 'experto' },
             { word: 'paralelepípedo', definition: 'Sólido de seis caras paralelas e iguales dos a dos.', difficulty: 'experto' },
             { word: 'electroencefalograma', definition: 'Registro gráfico de la actividad eléctrica del cerebro.', difficulty: 'experto' },
             { word: 'esternocleidomastoideo', definition: 'Músculo del cuello que permite la rotación y flexión de la cabeza.', difficulty: 'experto' },
             { word: 'otorrinolaringología', definition: 'Especialidad médica que se encarga de las enfermedades del oído, nariz y garganta.', difficulty: 'experto' },
-            // Puedes agregar más palabras y definiciones aquí clasificadas por dificultad
+            { word: 'electroencefalografista', definition: 'Especialista en realizar electroencefalogramas.', difficulty: 'experto' },
+            { word: 'anticonstitucionalidad', definition: 'Calidad de lo que es contrario a la constitución.', difficulty: 'experto' },
+            { word: 'desoxirribonucleico', definition: 'Relacionado con el ácido que contiene la información genética.', difficulty: 'experto' },
+            { word: 'hipopotomonstrosesquipedaliofobia', definition: 'Miedo irracional a las palabras largas.', difficulty: 'experto' },
+            { word: 'electrocardiograma', definition: 'Gráfico de la actividad eléctrica del corazón.', difficulty: 'experto' },
+            { word: 'inconstitucionalidad', definition: 'Falta de conformidad con la constitución.', difficulty: 'experto' },
+            { word: 'inmunodeficiencia', definition: 'Estado en el que el sistema inmunológico está debilitado.', difficulty: 'experto' },
+            { word: 'hiperparatiroidismo', definition: 'Exceso de actividad de las glándulas paratiroides.', difficulty: 'experto' },
+            { word: 'antihistamínico', definition: 'Sustancia que contrarresta los efectos de la histamina.', difficulty: 'experto' },
+            { word: 'psiconeuroinmunología', definition: 'Estudio de la interacción entre la psicología, neurología e inmunología.', difficulty: 'experto' },
+            { word: 'espectrofotometría', definition: 'Método de análisis basado en la medida de la luz absorbida.', difficulty: 'experto' },
+            { word: 'transubstanciación', definition: 'Conversión de una sustancia en otra.', difficulty: 'experto' },
+            { word: 'supercalifragilisticoespialidoso', definition: 'Palabra inventada que expresa algo extraordinario.', difficulty: 'experto' },
+            { word: 'circunloquio', definition: 'Rodeo de palabras para dar a entender algo que podría expresarse más brevemente.', difficulty: 'experto' },
+            { word: 'contrarrevolucionario', definition: 'Que se opone a una revolución.', difficulty: 'experto' },
+            { word: 'otorinolaringólogo', definition: 'Médico especialista en oído, nariz y garganta.', difficulty: 'experto' },
+            { word: 'electromagnetismo', definition: 'Rama de la física que estudia las interacciones entre campos eléctricos y magnéticos.', difficulty: 'experto' },
+            { word: 'hipertrofia', definition: 'Crecimiento excesivo de un órgano o tejido.', difficulty: 'experto' },
+            { word: 'metempsicosis', definition: 'Doctrina de la transmigración de las almas.', difficulty: 'experto' },
+            { word: 'helicóptero', definition: 'Aeronave que se sostiene en el aire gracias a la rotación de sus hélices.', difficulty: 'experto' },
+            { word: 'procrastinación', definition: 'Acción de retrasar o aplazar una tarea.', difficulty: 'experto' },
+            { word: 'desoxirribonucleótido', definition: 'Molécula básica del ADN.', difficulty: 'experto' },
+            { word: 'hiperboloide', definition: 'Superficie cuadrática en geometría.', difficulty: 'experto' },
+            { word: 'iconoclasta', definition: 'Persona que rechaza la tradición y las normas establecidas.', difficulty: 'experto' },
+            { word: 'isotropía', definition: 'Propiedad de ciertos materiales de tener las mismas características en todas las direcciones.', difficulty: 'experto' },
+            { word: 'magnetohidrodinámica', definition: 'Estudio de las propiedades magnéticas de los fluidos conductores.', difficulty: 'experto' },
+            { word: 'psicofarmacología', definition: 'Estudio de los efectos de los fármacos en el comportamiento.', difficulty: 'experto' },
+            { word: 'termodinámica', definition: 'Rama de la física que estudia los cambios de temperatura y energía.', difficulty: 'experto' },
+            { word: 'xenofobia', definition: 'Aversión a los extranjeros.', difficulty: 'experto' },
+            { word: 'antropocentrismo', definition: 'Doctrina que sitúa al ser humano en el centro del universo.', difficulty: 'experto' },
+            { word: 'esclerodermia', definition: 'Enfermedad autoinmune que causa el endurecimiento de la piel.', difficulty: 'experto' },
+            { word: 'neumonoultramicroscopicosilicovulcanoconiosis', definition: 'Enfermedad pulmonar causada por la inhalación de cenizas volcánicas.', difficulty: 'experto' },
+            { word: 'transustanciación', definition: 'Conversión del pan y el vino en el cuerpo y la sangre de Cristo en la Eucaristía.', difficulty: 'experto' },
+            { word: 'hiperglucemia', definition: 'Exceso de glucosa en la sangre.', difficulty: 'experto' },
+            { word: 'hematopoyesis', definition: 'Proceso de formación de las células sanguíneas.', difficulty: 'experto' },
+            { word: 'epidemiología', definition: 'Estudio de la distribución y determinantes de enfermedades en poblaciones.', difficulty: 'experto' },
+            { word: 'hipotalámico', definition: 'Relacionado con el hipotálamo del cerebro.', difficulty: 'experto' },
+            { word: 'hipocondríaco', definition: 'Persona que sufre hipocondría.', difficulty: 'experto' },
+            { word: 'paralelepípedo', definition: 'Sólido geométrico de seis caras paralelas.', difficulty: 'experto' },
+            { word: 'electroencefalografía', definition: 'Registro de la actividad eléctrica cerebral.', difficulty: 'experto' },
+            { word: 'otorrea', definition: 'Secreción anormal del oído.', difficulty: 'experto' },
+            { word: 'encefalopatía', definition: 'Enfermedad del encéfalo.', difficulty: 'experto' },
+            { word: 'psicopatología', definition: 'Estudio de los trastornos mentales.', difficulty: 'experto' },
+            { word: 'hepatocarcinoma', definition: 'Cáncer de hígado.', difficulty: 'experto' },
+            { word: 'neuropatía', definition: 'Enfermedad de los nervios periféricos.', difficulty: 'experto' },
+            { word: 'leucemia', definition: 'Cáncer de los tejidos que forman la sangre.', difficulty: 'experto' },
+            { word: 'anatomopatólogo', definition: 'Especialista en anatomía patológica.', difficulty: 'experto' },
+            { word: 'neuropsicología', definition: 'Estudio de la relación entre el cerebro y la conducta.', difficulty: 'experto' },
+            { word: 'biotecnología', definition: 'Aplicación de técnicas biológicas en la industria.', difficulty: 'experto' },
+            { word: 'bioinformática', definition: 'Aplicación de la informática a la biología molecular.', difficulty: 'experto' },
+            { word: 'nanociencia', definition: 'Estudio de fenómenos a escala nanométrica.', difficulty: 'experto' },
+            { word: 'astrofísica', definition: 'Rama de la astronomía que estudia la física del universo.', difficulty: 'experto' },
+            { word: 'astrodinámica', definition: 'Estudio del movimiento de los objetos en el espacio.', difficulty: 'experto' },
+            { word: 'astrobiología', definition: 'Estudio de la vida en el universo.', difficulty: 'experto' },
+            { word: 'exobiología', definition: 'Estudio de la posibilidad de vida extraterrestre.', difficulty: 'experto' },
+            { word: 'astroquímica', definition: 'Estudio de la composición química de los cuerpos celestes.', difficulty: 'experto' },
+            // Añade más palabras difíciles aquí
+            // ...
         ];
 
         // Palabras para el Modo Pokémon
@@ -339,7 +639,332 @@
             { word: 'charmander', definition: 'Pokémon inicial de tipo fuego en la región de Kanto.', difficulty: 'pokemon' },
             { word: 'squirtle', definition: 'Pokémon inicial de tipo agua en la región de Kanto.', difficulty: 'pokemon' },
             { word: 'mewtwo', definition: 'Pokémon legendario creado a partir del ADN de Mew.', difficulty: 'pokemon' },
-            // Puedes agregar más Pokémon aquí
+            { word: 'eevee', definition: 'Pokémon con múltiples evoluciones posibles.', difficulty: 'pokemon' },
+            { word: 'jigglypuff', definition: 'Pokémon de tipo normal/hada conocido por su canto.', difficulty: 'pokemon' },
+            { word: 'snorlax', definition: 'Pokémon conocido por su gran tamaño y apetito.', difficulty: 'pokemon' },
+            { word: 'dragonite', definition: 'Pokémon de primera generación tipo dragón volador de gran poder.', difficulty: 'pokemon' },
+            { word: 'gyarados', definition: 'Pokémon de tipo agua/volador que evoluciona de Magikarp.', difficulty: 'pokemon' },
+            { word: 'psyduck', definition: 'Pokémon que sufre constantes dolores de cabeza.', difficulty: 'pokemon' },
+            { word: 'meowth', definition: 'Pokémon de tipo normal conocido por hablar en el Equipo Rocket.', difficulty: 'pokemon' },
+            { word: 'lapras', definition: 'Pokémon de tipo agua/hielo que transporta personas en su espalda.', difficulty: 'pokemon' },
+            { word: 'ditto', definition: 'Pokémon que puede transformarse en cualquier otro.', difficulty: 'pokemon' },
+            { word: 'magikarp', definition: 'Pokémon conocido por ser débil pero evoluciona en algo poderoso.', difficulty: 'pokemon' },
+            { word: 'lucario', definition: 'Pokémon de tipo lucha/acero que puede sentir las auras.', difficulty: 'pokemon' },
+            { word: 'gengar', definition: 'Pokémon fantasma con personalidad siniestra que absorbe el calor alrededor.', difficulty: 'pokemon' },
+            { word: 'umbreon', definition: 'Evolución de Eevee de tipo siniestro.', difficulty: 'pokemon' },
+            { word: 'espeon', definition: 'Evolución de Eevee de tipo psíquico.', difficulty: 'pokemon' },
+            { word: 'vaporeon', definition: 'Evolución de Eevee de tipo agua.', difficulty: 'pokemon' },
+            { word: 'jolteon', definition: 'Evolución de Eevee de tipo eléctrico.', difficulty: 'pokemon' },
+            { word: 'flareon', definition: 'Evolución de Eevee de tipo fuego.', difficulty: 'pokemon' },
+            { word: 'leafeon', definition: 'Evolución de Eevee de tipo planta.', difficulty: 'pokemon' },
+            { word: 'glaceon', definition: 'Evolución de Eevee de tipo hielo.', difficulty: 'pokemon' },
+            { word: 'sylveon', definition: 'Evolución de Eevee de tipo hada.', difficulty: 'pokemon' },
+            { word: 'mew', definition: 'Pokémon mítico capaz de aprender cualquier ataque.', difficulty: 'pokemon' },
+            { word: 'articuno', definition: 'Ave legendaria de tipo hielo/volador.', difficulty: 'pokemon' },
+            { word: 'zapdos', definition: 'Ave legendaria de tipo eléctrico/volador.', difficulty: 'pokemon' },
+            { word: 'moltres', definition: 'Ave legendaria de tipo fuego/volador.', difficulty: 'pokemon' },
+            { word: 'raikou', definition: 'Perro legendario de tipo eléctrico.', difficulty: 'pokemon' },
+            { word: 'entei', definition: 'Perro legendario de tipo fuego.', difficulty: 'pokemon' },
+            { word: 'suicune', definition: 'Perro legendario de tipo agua.', difficulty: 'pokemon' },
+            { word: 'lugia', definition: 'Pokémon legendario psíquico volador que habita en los mares.', difficulty: 'pokemon' },
+            { word: 'ho-oh', definition: 'Pokémon legendario que representa el arcoíris.', difficulty: 'pokemon' },
+            { word: 'celebi', definition: 'Pokémon mítico que viaja a través del tiempo.', difficulty: 'pokemon' },
+            { word: 'tyranitar', definition: 'Pokémon de tipo roca/siniestro conocido por su gran poder.', difficulty: 'pokemon' },
+            { word: 'blaziken', definition: 'Pokémon de tipo fuego/lucha que tiene poderosas patadas.', difficulty: 'pokemon' },
+            { word: 'gardevoir', definition: 'Pokémon de tipo psíquico/hada que protege a su entrenador.', difficulty: 'pokemon' },
+            { word: 'metagross', definition: 'Pokémon de tipo acero/psíquico con gran inteligencia.', difficulty: 'pokemon' },
+            { word: 'salamence', definition: 'Pokémon dragón volador que finalmente obtuvo alas.', difficulty: 'pokemon' },
+            { word: 'blastoise', definition: 'Evolución final de Squirtle con poderosos cañones de agua.', difficulty: 'pokemon' },
+            { word: 'venusaur', definition: 'Evolución final de Bulbasaur con una gran flor en su espalda.', difficulty: 'pokemon' },
+            { word: 'charizard', definition: 'Evolución final de Charmander que escupe fuego.', difficulty: 'pokemon' },
+            { word: 'absol', definition: 'Pokémon de tipo siniestro que predice desastres naturales.', difficulty: 'pokemon' },
+            { word: 'aggron', definition: 'Pokémon de tipo acero/roca con una fuerte armadura.', difficulty: 'pokemon' },
+            { word: 'milotic', definition: 'Pokémon conocido por ser uno de los más bellos.', difficulty: 'pokemon' },
+            { word: 'garchomp', definition: 'Pokémon dragón/tierra con gran velocidad y poder cuyas alas crean cuchillas de viento.', difficulty: 'pokemon' },
+            { word: 'weavile', definition: 'Pokémon de cuarta generación de tipo siniestro/hielo rápido y astuto.', difficulty: 'pokemon' },
+            { word: 'darkrai', definition: 'Pokémon mítico que causa pesadillas.', difficulty: 'pokemon' },
+            { word: 'arceus', definition: 'Pokémon conocido como el creador de todo.', difficulty: 'pokemon' },
+            { word: 'greninja', definition: 'Pokémon de tipo agua/siniestro con movimientos rápidos y que fue compañero de Ash.', difficulty: 'pokemon' },
+            { word: 'zoroark', definition: 'Pokémon de tipo siniestro que puede crear ilusiones.', difficulty: 'pokemon' },
+            { word: 'zeraora', definition: 'Pokémon mítico de tipo eléctrico que viaja a la velocidad del rayo.', difficulty: 'pokemon' },
+            { word: 'mimikyu', definition: 'Pokémon que se disfraza para ser querido.', difficulty: 'pokemon' },
+            { word: 'dragapult', definition: 'Pokémon dragón/fantasma que lanza a sus propias crías.', difficulty: 'pokemon' },
+            { word: 'corviknight', definition: 'Pokémon de tipo volador/acero utilizado como taxi.', difficulty: 'pokemon' },
+            { word: 'duraludon', definition: 'Pokémon de octava generación de tipo acero/dragón resistente pero ligero.', difficulty: 'pokemon' },
+            { word: 'alakazam', definition: 'Pokémon de primera generación de tipo psíquico con gran inteligencia.' },
+            { word: 'golem', definition: 'Pokémon de tipo roca/tierra con una coraza dura.' },
+            { word: 'slowbro', definition: 'Pokémon de tipo agua/psíquico con una cola mordida por un Shellder.' },
+            { word: 'kangaskhan', definition: 'Pokémon que siempre lleva a su cría en el marsupio.' },
+            { word: 'scyther', definition: 'Pokémon de tipo bicho/volador con cuchillas en sus brazos.' },
+            { word: 'pinsir', definition: 'Pokémon de tipo bicho con poderosas pinzas en su cabeza.' },
+            { word: 'tauros', definition: 'Pokémon de tipo normal parecido a un toro salvaje.' },
+            { word: 'magmar', definition: 'Pokémon de tipo fuego con cuerpo ardiente.' },
+            { word: 'porygon', definition: 'Pokémon virtual creado a partir de datos.' },
+            { word: 'aerodactyl', definition: 'Pokémon fósil de tipo roca/volador parecido a un pterosaurio.' },
+            { word: 'omastar', definition: 'Evolución de Omanyte con tentáculos y concha espiral.' },
+            { word: 'kabutops', definition: 'Evolución de Kabuto con cuchillas afiladas en sus brazos.' },
+            { word: 'dratini', definition: 'Pokémon dragón que vive en las profundidades de los mares.' },
+            { word: 'dragonair', definition: 'Evolución de Dratini, elegante y místico.' },
+            // Añade más Pokémon aquí
+            // ...
+        ];
+
+        // Palabras para el Evento de Idiomas
+        const languageWords = {
+            ingles: [
+                { word: 'dog', translation: 'perro' },
+                { word: 'cat', translation: 'gato' },
+                { word: 'house', translation: 'casa' },
+                { word: 'sun', translation: 'sol' },
+                { word: 'apple', translation: 'manzana' },
+                { word: 'book', translation: 'libro' },
+                { word: 'tree', translation: 'árbol' },
+                { word: 'water', translation: 'agua' },
+                { word: 'fire', translation: 'fuego' },
+                { word: 'earth', translation: 'tierra' },
+                { word: 'moon', translation: 'luna' },
+                { word: 'star', translation: 'estrella' },
+                { word: 'cloud', translation: 'nube' },
+                { word: 'rain', translation: 'lluvia' },
+                { word: 'wind', translation: 'viento' },
+                { word: 'mountain', translation: 'montaña' },
+                { word: 'river', translation: 'río' },
+                { word: 'ocean', translation: 'océano' },
+                { word: 'flower', translation: 'flor' },
+                { word: 'bird', translation: 'pájaro' },
+                { word: 'fish', translation: 'pez' },
+                { word: 'friend', translation: 'amigo' },
+                { word: 'family', translation: 'familia' },
+                { word: 'food', translation: 'comida' },
+                // Añade más palabras en inglés
+            ],
+            frances: [
+                { word: 'maison', translation: 'casa' },
+                { word: 'livre', translation: 'libro' },
+                { word: 'chien', translation: 'perro' },
+                { word: 'chat', translation: 'gato' },
+                { word: 'pomme', translation: 'manzana' },
+                { word: 'eau', translation: 'agua' },
+                { word: 'feu', translation: 'fuego' },
+                { word: 'terre', translation: 'tierra' },
+                { word: 'lune', translation: 'luna' },
+                { word: 'soleil', translation: 'sol' },
+                { word: 'étoile', translation: 'estrella' },
+                { word: 'nuage', translation: 'nube' },
+                { word: 'pluie', translation: 'lluvia' },
+                { word: 'vent', translation: 'viento' },
+                { word: 'arbre', translation: 'árbol' },
+                { word: 'montagne', translation: 'montaña' },
+                { word: 'rivière', translation: 'río' },
+                { word: 'océan', translation: 'océano' },
+                { word: 'fleur', translation: 'flor' },
+                { word: 'oiseau', translation: 'pájaro' },
+                { word: 'poisson', translation: 'pez' },
+                { word: 'ami', translation: 'amigo' },
+                { word: 'famille', translation: 'familia' },
+                { word: 'nourriture', translation: 'comida' },
+                // Añade más palabras en francés
+            ],
+            italiano: [
+                { word: 'cane', translation: 'perro' },
+                { word: 'gatto', translation: 'gato' },
+                { word: 'sole', translation: 'sol' },
+                { word: 'casa', translation: 'casa' },
+                { word: 'mela', translation: 'manzana' },
+                { word: 'libro', translation: 'libro' },
+                { word: 'albero', translation: 'árbol' },
+                { word: 'acqua', translation: 'agua' },
+                { word: 'fuoco', translation: 'fuego' },
+                { word: 'terra', translation: 'tierra' },
+                { word: 'luna', translation: 'luna' },
+                { word: 'stella', translation: 'estrella' },
+                { word: 'nuvola', translation: 'nube' },
+                { word: 'pioggia', translation: 'lluvia' },
+                { word: 'vento', translation: 'viento' },
+                { word: 'montagna', translation: 'montaña' },
+                { word: 'fiume', translation: 'río' },
+                { word: 'oceano', translation: 'océano' },
+                { word: 'fiore', translation: 'flor' },
+                { word: 'uccello', translation: 'pájaro' },
+                { word: 'pesce', translation: 'pez' },
+                { word: 'amico', translation: 'amigo' },
+                { word: 'famiglia', translation: 'familia' },
+                { word: 'cibo', translation: 'comida' },
+                // Añade más palabras en italiano
+            ],
+            aleman: [
+                { word: 'hund', translation: 'perro' },
+                { word: 'katze', translation: 'gato' },
+                { word: 'haus', translation: 'casa' },
+                { word: 'sonne', translation: 'sol' },
+                { word: 'apfel', translation: 'manzana' },
+                { word: 'buch', translation: 'libro' },
+                { word: 'baum', translation: 'árbol' },
+                { word: 'wasser', translation: 'agua' },
+                { word: 'feuer', translation: 'fuego' },
+                { word: 'erde', translation: 'tierra' },
+                { word: 'mond', translation: 'luna' },
+                { word: 'stern', translation: 'estrella' },
+                { word: 'wolke', translation: 'nube' },
+                { word: 'regen', translation: 'lluvia' },
+                { word: 'wind', translation: 'viento' },
+                { word: 'berg', translation: 'montaña' },
+                { word: 'fluss', translation: 'río' },
+                { word: 'ozean', translation: 'océano' },
+                { word: 'blume', translation: 'flor' },
+                { word: 'vogel', translation: 'pájaro' },
+                { word: 'fisch', translation: 'pez' },
+                { word: 'freund', translation: 'amigo' },
+                { word: 'familie', translation: 'familia' },
+                { word: 'essen', translation: 'comida' },
+                // Añade más palabras en alemán
+            ]
+        };
+
+        // Adivinanzas
+        const riddles = [
+            { question: 'Blanca por dentro, verde por fuera. Si quieres que te lo diga, espera.', answer: 'pera' },
+            { question: 'Oro parece, plata no es. El que no lo adivine, bien tonto es.', answer: 'plátano' },
+            { question: 'Tengo agujas y no sé coser, tengo números y no sé leer.', answer: 'reloj' },
+            { question: 'Tengo ciudades pero no casas, montañas pero no árboles, y agua pero no peces. ¿Qué soy?', answer: 'mapa' },
+            { question: 'Si me nombras, desaparezco. ¿Quién soy?', answer: 'silencio' },
+            { question: 'Vuelo sin alas, lloro sin ojos. ¿Quién soy?', answer: 'nubes' },
+            { question: '¿Qué sube y baja pero no se mueve?', answer: 'escalera' },
+            { question: '¿Qué tiene un ojo pero no puede ver?', answer: 'aguja' },
+            { question: 'No se ve, no se siente, no se oye, y si llega, todo lo llena. ¿Qué es?', answer: 'aire' },
+            { question: 'Cuanto más le quitas, más grande se vuelve. ¿Qué es?', answer: 'agujero' },
+            { question: 'Todos me pisan, pero no me quejo. Todos preguntan por mí, pero no contesto. ¿Qué soy?', answer: 'suelo' },
+            { question: 'Tiene cuello pero no cabeza, y dos brazos pero sin manos. ¿Qué es?', answer: 'camisa' },
+            { question: '¿Qué se moja mientras seca?', answer: 'toalla' },
+            { question: 'Si lo tienes, quieres compartirlo, si lo compartes, ya no lo tienes. ¿Qué es?', answer: 'secreto' },
+            { question: 'Es tuyo pero todos lo usan más que tú. ¿Qué es?', answer: 'nombre' },
+            { question: '¿Qué es algo que puedes atrapar pero no lanzar?', answer: 'resfriado' },
+            { question: '¿Qué tiene cuatro patas por la mañana, dos al mediodía y tres por la noche?', answer: 'humano' },
+            { question: 'Tengo llaves pero no cerraduras, espacio pero no habitación. Puedes entrar pero no salir. ¿Qué soy?', answer: 'teclado' },
+            { question: '¿Qué se puede romper sin tocarlo?', answer: 'promesa' },
+            { question: 'Soy alto cuando soy joven y bajo cuando soy viejo. ¿Qué soy?', answer: 'vela' },
+            { question: 'Me puedes ver en el agua, pero no me mojo. ¿Qué soy?', answer: 'reflejo' },
+            // Añade más adivinanzas
+        ];
+
+        // Preguntas de Cultura Popular
+        const popCultureQuestions = [
+            {
+                question: '¿Cuál es el nombre del mago en "El Señor de los Anillos"?',
+                options: ['Gandalf', 'Dumbledore', 'Merlín'],
+                answer: 'gandalf'
+            },
+            {
+                question: '¿En qué año se lanzó el primer iPhone?',
+                options: ['2005', '2007', '2010'],
+                answer: '2007'
+            },
+            {
+                question: '¿Quién es el villano principal en la saga de Star Wars?',
+                options: ['Darth Vader', 'Thanos', 'Joker'],
+                answer: 'darth vader'
+            },
+{
+        question: '¿Cómo se llama el protagonista de la serie de videojuegos "The Legend of Zelda"?',
+        options: ['Link', 'Zelda', 'Ganon'],
+        answer: 'link'
+    },
+    {
+        question: '¿Qué actor interpreta a Iron Man en el Universo Cinematográfico de Marvel?',
+        options: ['Chris Evans', 'Robert Downey Jr.', 'Chris Hemsworth'],
+        answer: 'robert downey jr.'
+    },
+    {
+        question: '¿En qué país se originó Pokémon?',
+        options: ['China', 'Japón', 'Corea del Sur'],
+        answer: 'japón'
+    },
+    {
+        question: '¿Quién pintó la Mona Lisa?',
+        options: ['Leonardo da Vinci', 'Vincent van Gogh', 'Pablo Picasso'],
+        answer: 'leonardo da vinci'
+    },
+    {
+        question: '¿Cuál es el nombre del mago con una cicatriz en forma de rayo en su frente?',
+        options: ['Ron Weasley', 'Harry Potter', 'Hermione Granger'],
+        answer: 'harry potter'
+    },
+    {
+        question: '¿En qué año se hundió el Titanic en su viaje inaugural?',
+        options: ['1912', '1920', '1898'],
+        answer: '1912'
+    },
+    {
+        question: '¿Qué banda británica lanzó el álbum "Abbey Road"?',
+        options: ['The Beatles', 'Queen', 'Pink Floyd'],
+        answer: 'the beatles'
+    },
+    {
+        question: '¿Quién es el famoso detective creado por Arthur Conan Doyle?',
+        options: ['Hercule Poirot', 'Sherlock Holmes', 'Philip Marlowe'],
+        answer: 'sherlock holmes'
+    },
+    {
+        question: '¿Quién escribió "Don Quijote de la Mancha"?',
+        options: ['Miguel de Cervantes', 'Gabriel García Márquez', 'Federico García Lorca'],
+        answer: 'miguel de cervantes'
+    },
+    {
+        question: '¿En qué ciudad se celebraron los Juegos Olímpicos de 2016?',
+        options: ['Londres', 'Río de Janeiro', 'Tokio'],
+        answer: 'río de janeiro'
+    },
+    {
+        question: '¿Qué empresa tecnológica fabrica el iPhone?',
+        options: ['Samsung', 'Apple', 'Google'],
+        answer: 'apple'
+    },
+    {
+        question: '¿Quién es el autor de "Canción de Hielo y Fuego", base de "Juego de Tronos"?',
+        options: ['J.K. Rowling', 'George R.R. Martin', 'J.R.R. Tolkien'],
+        answer: 'george r.r. martin'
+    },
+    {
+        question: '¿Cuál es el nombre del actor que interpretó a Jack en "Titanic"?',
+        options: ['Leonardo DiCaprio', 'Brad Pitt', 'Johnny Depp'],
+        answer: 'leonardo dicaprio'
+    },
+    {
+        question: '¿Qué instrumento tocaba John Lennon en The Beatles?',
+        options: ['Guitarra', 'Batería', 'Piano'],
+        answer: 'guitarra'
+    },
+    {
+        question: '¿Cómo se llama el pez payaso protagonista de "Buscando a Nemo"?',
+        options: ['Dory', 'Marlin', 'Nemo'],
+        answer: 'nemo'
+    },
+    {
+        question: '¿Cuál es el nombre del videojuego que presenta a los hermanos Mario y Luigi?',
+        options: ['Super Mario Bros.', 'Donkey Kong', 'The Legend of Zelda'],
+        answer: 'super mario bros.'
+    },
+    {
+        question: '¿Quién es el director de las películas "Pulp Fiction" y "Kill Bill"?',
+        options: ['Quentin Tarantino', 'Steven Spielberg', 'Martin Scorsese'],
+        answer: 'quentin tarantino'
+    },
+    {
+        question: '¿En qué ciudad está ambientada la serie "Breaking Bad"?',
+        options: ['Albuquerque', 'Los Ángeles', 'Nueva York'],
+        answer: 'albuquerque'
+    },
+    {
+        question: '¿Cuál es el superhéroe alter ego de Bruce Wayne?',
+        options: ['Superman', 'Batman', 'Spider-Man'],
+        answer: 'batman'
+    },
+    {
+        question: '¿En qué película aparece el personaje Jack Sparrow?',
+        options: ['Piratas del Caribe', 'El Señor de los Anillos', 'Avatar'],
+        answer: 'piratas del caribe'
+    },
+            // Añade más preguntas
         ];
 
         // Elementos del DOM
@@ -353,50 +978,72 @@
         const restartButton = document.getElementById('restart');
         const totalScoreSpan = document.getElementById('total-score');
         const storeTotalScoreSpan = document.getElementById('store-total-score');
+        const specialPointsSpan = document.getElementById('special-points');
+        const storeSpecialPointsSpan = document.getElementById('store-special-points');
         const currentAvatarImg = document.getElementById('current-avatar');
         const changeAvatarButton = document.getElementById('change-avatar');
         const avatarStore = document.getElementById('avatar-store');
-        const avatarStoreContainer = document.querySelector('#avatar-store .store');
+        const avatarStoreContainer = document.getElementById('avatar-store-container');
+        const specialStore = document.getElementById('special-store');
+        const specialStoreContainer = document.getElementById('special-store-container');
         const backToMenuButton = document.getElementById('back-to-menu');
+        const backToMenuSpecialButton = document.getElementById('back-to-menu-special');
         const gameTitle = document.getElementById('game-title');
         const pokemonStore = document.getElementById('pokemon-store');
-        const pokemonStoreContainer = document.querySelector('#pokemon-store .store');
+        const pokemonStoreContainer = document.getElementById('pokemon-store-container');
         const backToMenuPokemonButton = document.getElementById('back-to-menu-pokemon');
         const pokemonPointsSpan = document.getElementById('pokemon-points');
         const openPokemonStoreBtn = document.getElementById('open-pokemon-store');
+        const openSpecialStoreBtn = document.getElementById('open-special-store');
         const pokedexIcon = document.getElementById('pokedex-icon');
         const pokedex = document.getElementById('pokedex');
         const pokedexEntries = document.getElementById('pokedex-entries');
         const closePokedexButton = document.getElementById('close-pokedex');
         const backToMainButton = document.getElementById('back-to-main');
+        const attemptsElement = document.getElementById('attempts');
+        const inputGroup = document.getElementById('input-group');
 
         // Funciones de Guardado y Carga
         function saveGame() {
-            const gameData = {
-                totalScore,
-                currentAvatar,
-                avatars,
-                pokemonPoints,
-                capturedPokemon
-            };
-            localStorage.setItem('gameData', JSON.stringify(gameData));
-        }
+    const gameData = {
+        totalScore: totalScore,
+        currentAvatar: currentAvatar,
+        avatars: avatars,
+        specialAvatars: specialAvatars,
+        pokemonPoints: pokemonPoints,
+        capturedPokemon: capturedPokemon,
+        specialPoints: specialPoints
+    };
+    localStorage.setItem('gameData', JSON.stringify(gameData));
+}
+
 
         function loadGame() {
-            const savedData = JSON.parse(localStorage.getItem('gameData'));
-            if (savedData) {
-                totalScore = savedData.totalScore;
-                currentAvatar = savedData.currentAvatar;
-                avatars = savedData.avatars;
-                pokemonPoints = savedData.pokemonPoints || 0;
-                capturedPokemon = savedData.capturedPokemon || [];
-            }
-        }
+    const savedData = JSON.parse(localStorage.getItem('gameData'));
+    if (savedData) {
+        totalScore = savedData.totalScore || 0;
+        currentAvatar = savedData.currentAvatar || '';
+        avatars = savedData.avatars || avatars;
+        specialAvatars = savedData.specialAvatars || specialAvatars;
+        pokemonPoints = savedData.pokemonPoints || 0;
+        capturedPokemon = savedData.capturedPokemon || [];
+        specialPoints = savedData.specialPoints || 0;
+
+        // Actualizar la interfaz de usuario después de cargar
+        updateTotalScore();
+        updateAvatar();
+        updateSpecialPoints();
+        // Si tienes más funciones de actualización, llámalas aquí
+    }
+}
+
 
         // Funciones Generales
         function updateTotalScore() {
             totalScoreSpan.innerText = totalScore;
             storeTotalScoreSpan.innerText = totalScore;
+            specialPointsSpan.innerText = specialPoints;
+            storeSpecialPointsSpan.innerText = specialPoints;
             pokemonPointsSpan.innerText = pokemonPoints;
             saveGame();
         }
@@ -455,6 +1102,58 @@
                 }
                 avatarDiv.appendChild(avatarButton);
                 avatarStoreContainer.appendChild(avatarDiv);
+            });
+        }
+function updateSpecialPoints() {
+    specialPointsSpan.innerText = specialPoints;
+    storeSpecialPointsSpan.innerText = specialPoints;
+}
+
+        function openSpecialStore() {
+            mainMenu.style.display = 'none';
+            specialStore.style.display = 'block';
+            renderSpecialAvatars();
+        }
+
+        function renderSpecialAvatars() {
+            specialStoreContainer.innerHTML = '';
+            specialAvatars.forEach(avatar => {
+                const avatarDiv = document.createElement('div');
+                avatarDiv.classList.add('store-item');
+
+                const avatarImg = document.createElement('img');
+                avatarImg.src = avatar.src;
+                avatarDiv.appendChild(avatarImg);
+
+                const avatarButton = document.createElement('button');
+                if (avatar.unlocked) {
+                    avatarButton.innerText = 'Seleccionar';
+                    avatarButton.onclick = function() {
+                        currentAvatar = avatar.src;
+                        updateAvatar();
+                        alert('Has cambiado tu avatar especial.');
+                    };
+                } else {
+                    avatarButton.innerText = 'Comprar (' + avatar.price + ' pts especiales)';
+                    avatarButton.onclick = function() {
+                        if (specialPoints >= avatar.price) {
+                            specialPoints -= avatar.price;
+                            updateTotalScore();
+                            avatar.unlocked = true;
+                            avatarButton.innerText = 'Seleccionar';
+                            avatarButton.onclick = function() {
+                                currentAvatar = avatar.src;
+                                updateAvatar();
+                                alert('Has cambiado tu avatar especial.');
+                            };
+                            alert('Has comprado un nuevo avatar especial.');
+                        } else {
+                            alert('No tienes suficientes puntos especiales.');
+                        }
+                    };
+                }
+                avatarDiv.appendChild(avatarButton);
+                specialStoreContainer.appendChild(avatarDiv);
             });
         }
 
@@ -523,6 +1222,117 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
+        // Funciones de Eventos Especiales
+        function triggerSpecialEvent() {
+    // Evitar eventos en la primera pregunta, si un evento acaba de ocurrir, o si estamos en modo Pokémon
+    if (questionCount < 2 || eventJustOccurred || difficulty === 'pokemon') {
+        return false;
+    }
+
+    const eventChance = Math.random();
+    if (eventChance < 0.1) { // 10% de probabilidad
+        const eventTypeChance = Math.random();
+        if (eventTypeChance < 0.33) {
+            languageEvent();
+        } else if (eventTypeChance < 0.66) {
+            riddleEvent();
+        } else {
+            popCultureEvent();
+        }
+        eventJustOccurred = true; // Marcar que un evento acaba de ocurrir
+        return true;
+    }
+    eventJustOccurred = false; // Restablecer si no ocurre un evento
+    return false;
+}
+
+
+        function languageEvent() {
+            specialEventActive = true;
+            currentSpecialEvent = 'language'; // Establecer tipo de evento
+            const languages = Object.keys(languageWords);
+            const randomLanguage = languages[Math.floor(Math.random() * languages.length)];
+            const wordsArray = languageWords[randomLanguage];
+            const randomWordObj = wordsArray[Math.floor(Math.random() * wordsArray.length)];
+
+            currentWord = randomWordObj.translation.toLowerCase();
+            currentDefinition = `Traduce al español la palabra en ${capitalizeFirstLetter(randomLanguage)}: "${randomWordObj.word}"`;
+
+            document.getElementById('definition').innerText = currentDefinition;
+            document.getElementById('event-message').innerText = '¡Evento de Idiomas!';
+            attemptsElement.classList.add('hidden');
+            applyEpicStyles();
+        }
+
+        function riddleEvent() {
+            specialEventActive = true;
+            currentSpecialEvent = 'riddle'; // Establecer tipo de evento
+            const randomRiddle = riddles[Math.floor(Math.random() * riddles.length)];
+
+            currentWord = randomRiddle.answer.toLowerCase();
+            currentDefinition = `Adivinanza: ${randomRiddle.question}`;
+
+            document.getElementById('definition').innerText = currentDefinition;
+            document.getElementById('event-message').innerText = '¡Evento de Adivinanza!';
+            attemptsElement.classList.add('hidden');
+            applyEpicStyles();
+        }
+
+        function popCultureEvent() {
+            specialEventActive = true;
+            currentSpecialEvent = 'popCulture'; // Establecer tipo de evento
+            const randomQuestion = popCultureQuestions[Math.floor(Math.random() * popCultureQuestions.length)];
+
+            currentWord = randomQuestion.answer.toLowerCase();
+            currentDefinition = `Pregunta de Cultura Popular: ${randomQuestion.question}`;
+
+            document.getElementById('definition').innerText = currentDefinition;
+            document.getElementById('event-message').innerText = '¡Evento de Cultura Popular!';
+            attemptsElement.classList.add('hidden');
+            applyEpicStyles();
+
+            // Mostrar opciones
+            inputGroup.classList.add('hidden');
+            const optionsContainer = document.createElement('div');
+            optionsContainer.id = 'options-container';
+            optionsContainer.classList.add('option-buttons');
+
+            randomQuestion.options.forEach(option => {
+                const optionButton = document.createElement('button');
+                optionButton.classList.add('option-button');
+                optionButton.innerText = option;
+                optionButton.onclick = function() {
+                    handlePopCultureAnswer(option.toLowerCase());
+                };
+                optionsContainer.appendChild(optionButton);
+            });
+
+            gameContainer.appendChild(optionsContainer);
+        }
+
+        function handlePopCultureAnswer(selectedOption) {
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.remove();
+            inputGroup.classList.remove('hidden');
+            if (selectedOption === currentWord) {
+                handleSpecialEventSuccess();
+            } else {
+                handleSpecialEventFailure();
+            }
+        }
+
+        function applyEpicStyles() {
+            gameContainer.classList.add('epic-background');
+            document.getElementById('answer').style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            document.getElementById('answer').style.color = '#000';
+        }
+
+        function removeEpicStyles() {
+            gameContainer.classList.remove('epic-background');
+            document.getElementById('answer').style.backgroundColor = '';
+            document.getElementById('answer').style.color = '';
+        }
+
         // Funciones del Juego
         function getRandomWord() {
             const randomIndex = Math.floor(Math.random() * filteredWords.length);
@@ -530,6 +1340,29 @@
         }
 
         function setNewWord() {
+            questionCount++;
+            document.getElementById('event-message').innerText = '';
+            specialEventActive = false;
+            eventMultiplier = 1;
+            if (!nextCorrectAnswerBonus) {
+                attempts = 3;
+            }
+            attemptsElement.classList.remove('hidden');
+            attemptsElement.innerText = 'Intentos restantes: ' + attempts;
+            removeEpicStyles();
+            document.getElementById('message').innerText = '';
+            document.getElementById('definition').innerText = '';
+            document.getElementById('answer').value = '';
+
+            const optionsContainer = document.getElementById('options-container');
+            if (optionsContainer) {
+                optionsContainer.remove();
+                inputGroup.classList.remove('hidden');
+            }
+
+            if (triggerSpecialEvent()) {
+                return;
+            }
             if (filteredWords.length === 0) {
                 document.getElementById('message').innerText = 'No hay más palabras en este modo.';
                 return;
@@ -538,10 +1371,7 @@
             currentWord = wordObj.word.toLowerCase();
             currentDefinition = wordObj.definition;
             document.getElementById('definition').innerText = currentDefinition;
-            document.getElementById('answer').value = '';
-            document.getElementById('message').innerText = '';
-            attempts = 3;
-            document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
+            eventJustOccurred = false; // Permitir que un evento ocurra en el futuro
         }
 
         function startGame(selectedDifficulty) {
@@ -554,11 +1384,17 @@
                 gameTitle.innerText = 'Modo Normal';
             }
             gameScore = 0;
+            eventMultiplier = 1;
+            nextCorrectAnswerBonus = false;
+            questionCount = 0;
+            languageEventActive = false; // Resetear el multiplicador del evento de idiomas
+            eventJustOccurred = false; // Resetear el evento reciente
             document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
             mainMenu.style.display = 'none';
             difficultySelection.style.display = 'none';
             winMessage.style.display = 'none';
             avatarStore.style.display = 'none';
+            specialStore.style.display = 'none';
             pokemonStore.style.display = 'none';
             pokedex.style.display = 'none';
             gameContainer.style.display = 'block';
@@ -573,6 +1409,7 @@
                     pokemonPoints += gameScore;
                     updateTotalScore();
                     gameScore = 0; // Reiniciar gameScore
+                    languageEventActive = false; // Desactivar multiplicador
                     gameContainer.style.display = 'none';
                     winMessage.style.display = 'block';
                 }
@@ -592,6 +1429,7 @@
                     totalScore += gameScore;
                     updateTotalScore();
                     gameScore = 0; // Reiniciar gameScore
+                    languageEventActive = false; // Desactivar multiplicador
                     gameContainer.style.display = 'none';
                     winMessage.style.display = 'block';
                 }
@@ -622,12 +1460,38 @@
             }
             if (userAnswer === currentWord) {
                 // Respuesta correcta
-                let pointsEarned = 0;
-                if (difficulty === 'pokemon') {
-                    pointsEarned = 1; // Puedes ajustar este valor
-                    gameScore += pointsEarned;
-                    document.getElementById('score').innerText = 'Puntos Pokémon Ganados: ' + gameScore;
-                    document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' punto(s) Pokémon.';
+                if (specialEventActive) {
+                    handleSpecialEventSuccess();
+                } else {
+                    handleNormalSuccess();
+                }
+            } else {
+                // Respuesta incorrecta
+                if (specialEventActive) {
+                    handleSpecialEventFailure();
+                } else {
+                    attempts--;
+                    if (attempts > 0) {
+                        attemptsElement.innerText = 'Intentos restantes: ' + attempts;
+                        document.getElementById('message').innerText = 'Incorrecto. Inténtalo de nuevo.';
+                    } else {
+                        handleNormalFailure();
+                    }
+                }
+            }
+        });
+
+        function handleNormalSuccess() {
+            let pointsEarned = 0;
+            if (difficulty === 'pokemon') {
+                pointsEarned = 1; // Puedes ajustar este valor
+                gameScore += pointsEarned;
+                document.getElementById('score').innerText = 'Puntos Pokémon Ganados: ' + gameScore;
+                document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' punto(s) Pokémon.';
+            } else {
+                if (nextCorrectAnswerBonus) {
+                    pointsEarned = 5;
+                    nextCorrectAnswerBonus = false; // Resetear después de usarlo
                 } else {
                     switch(difficulty) {
                         case 'facil':
@@ -640,41 +1504,80 @@
                             pointsEarned = 3;
                             break;
                     }
-                    gameScore += pointsEarned;
-                    document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
-                    document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' punto(s).';
-                }
-                checkWin();
-                setTimeout(setNewWord, 2000);
-            } else {
-                // Respuesta incorrecta
-                attempts--;
-                if (attempts > 0) {
-                    document.getElementById('attempts').innerText = 'Intentos restantes: ' + attempts;
-                    document.getElementById('message').innerText = 'Incorrecto. Inténtalo de nuevo.';
-                } else {
-                    // Restar 1 punto después de agotar los intentos
-                    if (difficulty === 'pokemon') {
-                        if (gameScore > 0) {
-                            gameScore -= 1;
-                        }
-                        pokemonPoints = pokemonPoints > 0 ? pokemonPoints - 1 : 0;
-                        document.getElementById('score').innerText = 'Puntos Pokémon Ganados: ' + gameScore;
-                    } else {
-                        if (gameScore > 0) {
-                            gameScore -= 1;
-                        }
-                        totalScore = totalScore > 0 ? totalScore - 1 : 0;
-                        document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+                    if (languageEventActive) {
+                        pointsEarned *= 2;
                     }
-                    updateTotalScore();
-                    document.getElementById('message').innerText = 'Incorrecto. Has perdido 1 punto. Pasando a la siguiente palabra.';
-                    setTimeout(setNewWord, 2000);
                 }
+                gameScore += pointsEarned;
+                document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+                document.getElementById('message').innerText = '¡Correcto! Has ganado ' + pointsEarned + ' punto(s).';
             }
-        });
+            checkWin();
+            setTimeout(setNewWord, 2000);
+        }
 
-        // Modificación en el evento del botón "Volver al Menú"
+        function handleNormalFailure() {
+            // Restar 1 punto después de agotar los intentos
+            if (difficulty === 'pokemon') {
+                if (gameScore > 0) {
+                    gameScore -= 1;
+                }
+                pokemonPoints = pokemonPoints > 0 ? pokemonPoints - 1 : 0;
+                document.getElementById('score').innerText = 'Puntos Pokémon Ganados: ' + gameScore;
+            } else {
+                if (gameScore > 0) {
+                    gameScore -= 1;
+                }
+                totalScore = totalScore > 0 ? totalScore - 1 : 0;
+                document.getElementById('score').innerText = 'Puntuación de la Partida: ' + gameScore;
+            }
+            updateTotalScore();
+            languageEventActive = false; // Desactivar multiplicador
+            document.getElementById('message').innerText = 'Incorrecto. Has perdido 1 punto. Pasando a la siguiente palabra.';
+            setTimeout(setNewWord, 2000);
+        }
+
+        function handleSpecialEventSuccess() {
+            if (currentSpecialEvent === 'language') {
+                specialPoints += 2;
+                document.getElementById('message').innerText = '¡Correcto! Has ganado 2 puntos especiales y tus puntos serán duplicados hasta que falles o ganes.';
+                updateTotalScore();
+                languageEventActive = true; // Activar multiplicador
+            } else if (currentSpecialEvent === 'riddle') {
+                specialPoints += 2;
+                nextCorrectAnswerBonus = true;
+                document.getElementById('message').innerText = '¡Correcto! Has ganado 2 puntos especiales. Tu siguiente respuesta correcta te dará 5 puntos extra.';
+                updateTotalScore();
+            } else if (currentSpecialEvent === 'popCulture') {
+                specialPoints += 4;
+                document.getElementById('message').innerText = '¡Correcto! Has ganado 4 puntos especiales.';
+                updateTotalScore();
+            }
+            specialEventActive = false;
+            currentSpecialEvent = ''; // Resetear el evento especial actual
+            eventJustOccurred = true; // Marcar que un evento acaba de ocurrir
+            setTimeout(setNewWord, 2000);
+        }
+
+        function handleSpecialEventFailure() {
+            if (currentSpecialEvent === 'language') {
+                document.getElementById('message').innerText = 'Incorrecto. No has ganado puntos especiales.';
+                languageEventActive = false; // Desactivar multiplicador
+            } else if (currentSpecialEvent === 'riddle') {
+                specialPoints = specialPoints >= 2 ? specialPoints - 2 : 0;
+                document.getElementById('message').innerText = 'Incorrecto. Has perdido 2 puntos especiales.';
+                updateTotalScore();
+            } else if (currentSpecialEvent === 'popCulture') {
+                specialPoints = specialPoints >= 2 ? specialPoints - 2 : 0;
+                document.getElementById('message').innerText = 'Incorrecto. Has perdido 2 puntos especiales.';
+                updateTotalScore();
+            }
+            specialEventActive = false;
+            currentSpecialEvent = ''; // Resetear el evento especial actual
+            eventJustOccurred = true; // Marcar que un evento acaba de ocurrir
+            setTimeout(setNewWord, 2000);
+        }
+
         backToMainButton.addEventListener('click', function() {
             let confirmExit = confirm('¿Estás seguro de que quieres volver al menú? Perderás cinco puntos');
             if (confirmExit) {
@@ -689,6 +1592,9 @@
                     totalScore = totalScore >= 5 ? totalScore - 5 : 0;
                 }
                 gameScore = 0; // Reiniciar gameScore
+                eventMultiplier = 1;
+                nextCorrectAnswerBonus = false;
+                languageEventActive = false; // Desactivar multiplicador
                 updateTotalScore();
                 saveGame();
                 gameContainer.style.display = 'none';
@@ -708,12 +1614,22 @@
             openAvatarStore();
         });
 
+        openSpecialStoreBtn.addEventListener('click', function() {
+            openSpecialStore();
+        });
+
         openPokemonStoreBtn.addEventListener('click', function() {
             openPokemonStore();
         });
 
         backToMenuButton.addEventListener('click', function() {
             avatarStore.style.display = 'none';
+            mainMenu.style.display = 'block';
+            updateTotalScore();
+        });
+
+        backToMenuSpecialButton.addEventListener('click', function() {
+            specialStore.style.display = 'none';
             mainMenu.style.display = 'block';
             updateTotalScore();
         });
@@ -741,6 +1657,7 @@
             gameContainer.style.display = 'none';
             winMessage.style.display = 'none';
             avatarStore.style.display = 'none';
+            specialStore.style.display = 'none';
             pokemonStore.style.display = 'none';
             pokedex.style.display = 'none';
             updateTotalScore();
